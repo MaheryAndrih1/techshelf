@@ -15,6 +15,16 @@ class Notification(models.Model):
             self.notification_id = f"notif_{uuid.uuid4().hex[:8]}"
         super().save(*args, **kwargs)
     
+    @classmethod
+    def send_notification(cls, user, message):
+        """Utility method to easily send notifications"""
+        notification = cls.objects.create(
+            user=user,
+            message=message
+        )
+        # You could trigger email/push notifications here
+        return notification
+    
     def send_email(self):
         # In production, integrate with email service
         from django.core.mail import send_mail
