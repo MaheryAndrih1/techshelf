@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
 from .models import Cart, CartItem, ShippingInfo, Order, Promotion
 from products.models import Product
+from notifications.models import Notification
 from decimal import Decimal
 
 def get_or_create_cart(request):
@@ -74,6 +76,36 @@ def remove_from_cart_view(request, product_id):
     cart.remove_item(product_id)
     return redirect('orders:cart')
 
+def update_cart_quantity_view(request, product_id):
+    """Handle AJAX requests to update cart item quantities"""
+    if request.method == 'POST':
+        cart = get_or_create_cart(request)
+        quantity = int(request.GET.get('quantity', 1))
+        
+        # Find the cart item
+        try:
+            cart_item = cart.items.get(product_id=product_id)
+            
+            # Check if product has enough stock
+            product = Product.objects.get(product_id=product_id)
+            if quantity > product.stock:
+                return JsonResponse({'error': f'Only {product.stock} units available'}, status=400)
+            
+            # Update quantity or remove if zero
+            if quantity > 0:
+                cart_item.quantity = quantity
+                cart_item.save()
+            else:
+                cart_item.delete()
+                
+            return JsonResponse({'success': True})
+        except CartItem.DoesNotExist:
+            return JsonResponse({'error': 'Item not found in cart'}, status=404)
+        except Product.DoesNotExist:
+            return JsonResponse({'error': 'Product not found'}, status=404)
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
 @login_required
 def checkout_view(request):
     cart = get_or_create_cart(request)
@@ -138,6 +170,27 @@ def checkout_view(request):
             # Process the payment
             order.process_payment(payment_info)
             
+            # Create notification for buyer
+            Notification.objects.create(
+                user=request.user,
+                message=f"Your order #{order.order_id} has been placed successfully. Total amount: ${order.total_amount}."
+            )
+            
+            # Create notification for seller
+            for item in order.items.all():
+                try:
+                    product = Product.objects.get(product_id=item.product_id)
+                    seller = product.store.user
+                    
+                    # Create notification for each unique seller
+                    Notification.objects.get_or_create(
+                        user=seller,
+                        message=f"New order #{order.order_id} received from {request.user.username}. Please check your orders.",
+                        defaults={'is_read': False}
+                    )
+                except Product.DoesNotExist:
+                    continue
+            
             messages.success(request, 'Order placed successfully!')
             return redirect('orders:detail', order_id=order.order_id)
             
@@ -196,16 +249,30 @@ def order_detail_view(request, order_id):
         if order.payment_status == 'PAID' and order.order_status != 'DELIVERED' and order.order_status != 'CANCELLED':
             # Refund payment
             order.payment.refund_payment()
-            messages.success(request, 'Your order has been cancelled and payment refunded.')
             
-            # Restore stock
+            # Create notification for the order cancellation
+            Notification.objects.create(
+                user=request.user,
+                message=f"Your order #{order.order_id} has been cancelled and payment refunded."
+            )
+            
+            # Notify sellers about the cancellation
             for item in order.items.all():
                 try:
                     product = Product.objects.get(product_id=item.product_id)
+                    seller = product.store.user
+                    Notification.objects.create(
+                        user=seller,
+                        message=f"Order #{order.order_id} from {order.user.username} has been cancelled."
+                    )
+                    
+                    # Restore stock
                     product.stock += item.quantity
                     product.save()
                 except Product.DoesNotExist:
                     continue
+                    
+            messages.success(request, 'Your order has been cancelled and payment refunded.')
         else:
             messages.error(request, 'This order cannot be cancelled.')
         

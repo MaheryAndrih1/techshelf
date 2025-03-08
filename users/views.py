@@ -2,18 +2,30 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import User, BillingInfo
+from django.contrib.auth.models import User
+from .models import BillingInfo
+from .forms import RegistrationForm, ProfileEditForm, BillingInfoForm
 
 def login_view(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
+        
+        # For debugging
+        print(f"Attempting login with email: {email}")
+        
         user = authenticate(request, username=email, password=password)
         if user is not None:
             login(request, user)
+            
+            # Check for next parameter
+            next_url = request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
             return redirect('landing:home')
         else:
             messages.error(request, 'Invalid email or password.')
+            
     return render(request, 'users/login.html')
 
 def logout_view(request):
@@ -22,9 +34,14 @@ def logout_view(request):
 
 def register_view(request):
     if request.method == 'POST':
-        # Process registration form
-        pass
-    return render(request, 'users/register.html')
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('landing:home')
+    else:
+        form = RegistrationForm()
+    return render(request, 'users/register.html', {'form': form})
 
 @login_required
 def profile_view(request):
@@ -33,16 +50,26 @@ def profile_view(request):
 @login_required
 def edit_profile_view(request):
     if request.method == 'POST':
-        # Process profile edit form
-        pass
-    return render(request, 'users/edit_profile.html')
+        form = ProfileEditForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your profile has been updated.')
+            return redirect('users:profile')
+    else:
+        form = ProfileEditForm(instance=request.user)
+    return render(request, 'users/edit_profile.html', {'form': form})
 
 @login_required
 def billing_info_view(request):
     if request.method == 'POST':
-        # Process billing info form
-        pass
-    return render(request, 'users/billing.html')
+        form = BillingInfoForm(request.POST, instance=request.user.billinginfo)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your billing information has been updated.')
+            return redirect('users:profile')
+    else:
+        form = BillingInfoForm(instance=request.user.billinginfo)
+    return render(request, 'users/billing.html', {'form': form})
 
 @login_required
 def upgrade_to_seller_view(request):

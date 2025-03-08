@@ -134,13 +134,17 @@ def like_product_view(request, product_id):
         product = get_object_or_404(Product, product_id=product_id)
         
         # Check if the user has already liked this product
-        like, created = Like.objects.get_or_create(
-            user=request.user,
-            product=product
-        )
-        
-        if not created:
+        try:
+            like = Like.objects.get(user=request.user, product=product)
             # User has already liked this product, so unlike it
             like.delete()
+        except Like.DoesNotExist:
+            # Create a new like with proper like_id
+            like = Like(
+                user=request.user,
+                product=product,
+                like_id=f"like_{request.user.id}_{product.product_id}"
+            )
+            like.save()
         
         return redirect('products:detail', product_id=product_id)
