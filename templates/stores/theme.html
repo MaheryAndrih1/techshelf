@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Store Theme - {{ store.store_name }} - TechShelf{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0">Edit Store Theme: {{ store.store_name }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="primary_color" class="form-label">Primary Color</label>
+                        <input type="color" class="form-control form-control-color" id="primary_color" name="primary_color" 
+                               value="{{ store.theme.primary_color|default:'#3498db' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="secondary_color" class="form-label">Secondary Color</label>
+                        <input type="color" class="form-control form-control-color" id="secondary_color" name="secondary_color" 
+                               value="{{ store.theme.secondary_color|default:'#2ecc71' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="font" class="form-label">Font</label>
+                        <select class="form-select" id="font" name="font">
+                            <option value="Roboto" {% if store.theme.font == 'Roboto' %}selected{% endif %}>Roboto</option>
+                            <option value="Open Sans" {% if store.theme.font == 'Open Sans' %}selected{% endif %}>Open Sans</option>
+                            <option value="Lato" {% if store.theme.font == 'Lato' %}selected{% endif %}>Lato</option>
+                            <option value="Montserrat" {% if store.theme.font == 'Montserrat' %}selected{% endif %}>Montserrat</option>
+                            <option value="Poppins" {% if store.theme.font == 'Poppins' %}selected{% endif %}>Poppins</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="logo_url" class="form-label">Store Logo</label>
+                        {% if store.theme.logo_url %}
+                            <div class="mb-2">
+                                <img src="{{ store.theme.logo_url.url }}" alt="Current logo" style="max-height: 100px;" class="img-thumbnail">
+                            </div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="logo_url" name="logo_url" accept="image/*">
+                        <div class="form-text">Upload a new logo or leave blank to keep current.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="banner_url" class="form-label">Store Banner</label>
+                        {% if store.theme.banner_url %}
+                            <div class="mb-2">
+                                <img src="{{ store.theme.banner_url.url }}" alt="Current banner" style="max-height: 100px;" class="img-thumbnail">
+                            </div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="banner_url" name="banner_url" accept="image/*">
+                        <div class="form-text">Upload a new banner or leave blank to keep current.</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Update Theme</button>
+                        <a href="{% url 'stores:detail' subdomain=store.subdomain_name %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

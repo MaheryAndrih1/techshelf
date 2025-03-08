@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% load order_filters %}
+
+{% block title %}Checkout - TechShelf{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Checkout</h1>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Shipping Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="shipping-form">
+                    {% csrf_token %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="shipping_address" class="form-label">Address</label>
+                            <input type="text" class="form-control" id="shipping_address" name="shipping_address" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="city" class="form-label">City</label>
+                            <input type="text" class="form-control" id="city" name="city" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="country" class="form-label">Country</label>
+                            <input type="text" class="form-control" id="country" name="country" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="postal_code" class="form-label">Postal Code</label>
+                            <input type="text" class="form-control" id="postal_code" name="postal_code" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Payment Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="payment-form">
+                    {% csrf_token %}
+                    {% if user.billing_info %}
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="use_saved_card" name="use_saved_card" checked>
+                            <label class="form-check-label" for="use_saved_card">
+                                Use saved card (**** **** **** {{ user.billing_info.card_number|slice:"-4:" }})
+                            </label>
+                        </div>
+                        <div id="new-card-details" style="display: none;">
+                    {% else %}
+                        <div id="new-card-details">
+                    {% endif %}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="card_number" class="form-label">Card Number</label>
+                                <input type="text" class="form-control" id="card_number" name="card_number" placeholder="0000 0000 0000 0000">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="expiry_date" class="form-label">Expiry Date</label>
+                                <input type="text" class="form-control" id="expiry_date" name="expiry_date" placeholder="MM/YYYY">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="cvv" class="form-label">CVV</label>
+                                <input type="text" class="form-control" id="cvv" name="cvv" placeholder="123">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="name_on_card" class="form-label">Name on Card</label>
+                                <input type="text" class="form-control" id="name_on_card" name="name_on_card">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="save_card" name="save_card">
+                                <label class="form-check-label" for="save_card">
+                                    Save card for future purchases
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Order Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <tbody>
+                            {% for item in cart.items.all %}
+                                {% with product=item.product %}
+                                    <tr>
+                                        <td class="text-start">{{ item.quantity }}x {{ product.name }}</td>
+                                        <td class="text-end">${{ item.quantity|multiply:product.price }}</td>
+                                    </tr>
+                                {% endwith %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Subtotal</span>
+                    <span>${{ subtotal|default:"0.00" }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Shipping</span>
+                    <span>${{ shipping|default:"0.00" }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Tax</span>
+                    <span>${{ tax|default:"0.00" }}</span>
+                </div>
+                {% if discount %}
+                <div class="d-flex justify-content-between mb-2 text-success">
+                    <span>Discount</span>
+                    <span>-${{ discount }}</span>
+                </div>
+                {% endif %}
+                <hr>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="fw-bold">Total</span>
+                    <span class="fw-bold">${{ total|default:"0.00" }}</span>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary" id="place-order-btn">Place Order</button>
+                    <a href="{% url 'orders:cart' %}" class="btn btn-outline-secondary">Back to Cart</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if user.billing_info %}
+        const useSavedCardCheckbox = document.getElementById('use_saved_card');
+        const newCardDetails = document.getElementById('new-card-details');
+        
+        useSavedCardCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                newCardDetails.style.display = 'none';
+            } else {
+                newCardDetails.style.display = 'block';
+            }
+        });
+        {% endif %}
+        
+        const placeOrderBtn = document.getElementById('place-order-btn');
+        placeOrderBtn.addEventListener('click', function() {
+            // Combine the forms and submit
+            const shippingForm = document.getElementById('shipping-form');
+            const paymentForm = document.getElementById('payment-form');
+            
+            // Create a new form with all the data
+            const orderForm = document.createElement('form');
+            orderForm.method = 'post';
+            orderForm.style.display = 'none';
+            orderForm.action = "{% url 'orders:checkout' %}";
+            
+            // Add CSRF token
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = 'csrfmiddlewaretoken';
+            csrfToken.value = '{{ csrf_token }}';
+            orderForm.appendChild(csrfToken);
+            
+            // Get shipping data
+            const shippingData = new FormData(shippingForm);
+            for (const [name, value] of shippingData.entries()) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                orderForm.appendChild(input);
+            }
+            
+            // Get payment data
+            const paymentData = new FormData(paymentForm);
+            for (const [name, value] of paymentData.entries()) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                orderForm.appendChild(input);
+            }
+            
+            // Add the form to the body and submit
+            document.body.appendChild(orderForm);
+            orderForm.submit();
+        });
+    });
+</script>
+{% endblock %}

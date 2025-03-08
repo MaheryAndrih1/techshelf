@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}How TechShelf Works{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>How TechShelf Works</h1>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- For Buyers -->
+        <h2>For Buyers</h2>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">1. Browse Products</h5>
+                <p class="card-text">Explore our marketplace to find tech products from various sellers.</p>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">2. Add to Cart</h5>
+                <p class="card-text">Add products to your cart as you shop around the platform.</p>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">3. Checkout</h5>
+                <p class="card-text">Provide shipping and payment information to complete your purchase.</p>
+            </div>
+        </div>
+        
+        <!-- For Sellers -->
+        <h2 class="mt-5">For Sellers</h2>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">1. Upgrade to Seller</h5>
+                <p class="card-text">Create an account and upgrade to a seller account to access store features.</p>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">2. Create Your Store</h5>
+                <p class="card-text">Set up your store with a custom name, theme, and subdomain.</p>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">3. Add Products</h5>
+                <p class="card-text">Add your tech products with descriptions, prices, and images.</p>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">4. Manage Orders</h5>
+                <p class="card-text">Process incoming orders and track your sales through detailed reports.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Ready to Get Started?</h5>
+                <p class="card-text">Join TechShelf today and start buying or selling tech products!</p>
+                <a href="{% url 'users:register' %}" class="btn btn-primary btn-lg w-100 mb-3">Sign Up</a>
+                <a href="{% url 'users:login' %}" class="btn btn-outline-secondary w-100">Login</a>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">Have Questions?</h5>
+                <p class="card-text">Our support team is here to help you with any questions you might have.</p>
+                <a href="{% url 'landing:contact' %}" class="btn btn-info w-100">Contact Support</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

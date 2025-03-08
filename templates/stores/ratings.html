@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}Ratings & Reviews - {{ store.store_name }} - TechShelf{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Ratings & Reviews for {{ store.store_name }}</h1>
+        <hr>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="flex-shrink-0">
+                        {% if store.theme.logo_url %}
+                            <img src="{{ store.theme.logo_url.url }}" class="rounded" alt="{{ store.store_name }}" style="width: 80px; height: 80px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light rounded text-center p-3" style="width: 80px; height: 80px;">
+                                <span class="display-6">{{ store.store_name|slice:":1" }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3 class="mb-1">{{ store.store_name }}</h3>
+                        <p class="text-muted mb-1">By {{ store.user.username }}</p>
+                        
+                        {% with store.ratings.all as ratings %}
+                            {% if ratings %}
+                                {% with ratings|length as rating_count %}
+                                    {% with ratings|dictsort:"score"|last as average_rating %}
+                                        <div class="d-flex align-items-center">
+                                            <span class="h4 mb-0 me-2">{{ average_rating.score }}/5</span>
+                                            <div>
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= average_rating.score %}
+                                                        <span class="text-warning">★</span>
+                                                    {% else %}
+                                                        <span class="text-muted">★</span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                <span class="ms-2 text-muted">({{ rating_count }} reviews)</span>
+                                            </div>
+                                        </div>
+                                    {% endwith %}
+                                {% endwith %}
+                            {% else %}
+                                <p>No ratings yet</p>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="ms-auto">
+                        <a href="{% url 'stores:detail' subdomain=store.subdomain_name %}" class="btn btn-primary">Visit Store</a>
+                        {% if user.is_authenticated and user != store.user %}
+                            <a href="{% url 'stores:rate' subdomain=store.subdomain_name %}" class="btn btn-success">Write a Review</a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <h4>Rating Summary</h4>
+                {% with ratings=store.ratings.all %}
+                    {% for i in "54321" %}
+                        {% with i|add:"0" as score %}
+                            {% with ratings|dictsort:"score"|dictsortreversed:"score" as sorted_ratings %}
+                                {% with sorted_ratings|length as total %}
+                                    {% if total > 0 %}
+                                        {% with score_count=ratings|dictsort:"score"|length %}
+                                            <div class="d-flex align-items-center mb-1">
+                                                <div style="width: 60px;">{{ score }} ★</div>
+                                                <div class="progress flex-grow-1" style="height: 10px;">
+                                                    <div class="progress-bar bg-warning" role="progressbar" 
+                                                         style="width: {{ score_count|default:0|divisibleby:total|floatformat:0 }}%"></div>
+                                                </div>
+                                                <div style="width: 60px; text-align: right;">
+                                                    {{ score_count|default:0 }}
+                                                </div>
+                                            </div>
+                                        {% endwith %}
+                                    {% else %}
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div style="width: 60px;">{{ score }} ★</div>
+                                            <div class="progress flex-grow-1" style="height: 10px;">
+                                                <div class="progress-bar bg-warning" role="progressbar" style="width: 0%"></div>
+                                            </div>
+                                            <div style="width: 60px; text-align: right;">0</div>
+                                        </div>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endwith %}
+                        {% endwith %}
+                    {% endfor %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Rating Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <canvas id="ratingChart" width="400" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h4>Customer Reviews</h4>
+        
+        <div class="list-group">
+            {% for rating in ratings %}
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= rating.score %}
+                                    <span class="text-warning">★</span>
+                                {% else %}
+                                    <span class="text-muted">★</span>
+                                {% endif %}
+                            {% endfor %}
+                        </h5>
+                        <small>{{ rating.timestamp|date:"F d, Y" }}</small>
+                    </div>
+                    <p class="mb-1">{{ rating.comment }}</p>
+                    <small>By {{ rating.user.username }}</small>
+                </div>
+            {% empty %}
+                <div class="alert alert-info">
+                    No reviews yet. Be the first to review this store!
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('ratingChart').getContext('2d');
+        const ratingChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['5 Stars', '4 Stars', '3 Stars', '2 Stars', '1 Star'],
+                datasets: [{
+                    label: 'Rating Distribution',
+                    data: [
+                        {% with ratings=store.ratings.all %}
+                            {% for i in "54321" %}
+                                {% with i|add:"0" as score %}
+                                    {{ ratings|dictsort:"score"|length|default:0 }}{% if not forloop.last %},{% endif %}
+                                {% endwith %}
+                            {% endfor %}
+                        {% endwith %}
+                    ],
+                    backgroundColor: [
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(23, 162, 184, 0.8)',
+                        'rgba(255, 152, 0, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 193, 7, 1)',
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(23, 162, 184, 1)',
+                        'rgba(255, 152, 0, 1)',
+                        'rgba(220, 53, 69, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

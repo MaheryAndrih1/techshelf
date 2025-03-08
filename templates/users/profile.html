@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Your Profile - TechShelf{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Your Profile</h1>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <div class="bg-light rounded-circle d-inline-block p-3">
+                        <span class="display-4">{{ user.username|slice:":1" }}</span>
+                    </div>
+                </div>
+                <h5 class="card-title">{{ user.username }}</h5>
+                <p class="card-text">{{ user.email }}</p>
+                <p class="card-text">Account Type: <span class="badge bg-primary">{{ user.role }}</span></p>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'users:edit_profile' %}" class="btn btn-primary">Edit Profile</a>
+                    {% if user.role != 'SELLER' %}
+                        <a href="{% url 'users:upgrade_seller' %}" class="btn btn-success">Become a Seller</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Billing Information</h5>
+            </div>
+            <div class="card-body">
+                {% if user.billing_info %}
+                    <p><strong>Card Number:</strong> **** **** **** {{ user.billing_info.card_number|slice:"-4:" }}</p>
+                    <p><strong>Expiry Date:</strong> {{ user.billing_info.expiry_date }}</p>
+                    <p><strong>Billing Address:</strong> {{ user.billing_info.billing_address }}</p>
+                    <a href="{% url 'users:billing' %}" class="btn btn-outline-primary">Update Billing Info</a>
+                {% else %}
+                    <p>No billing information added yet.</p>
+                    <a href="{% url 'users:billing' %}" class="btn btn-primary">Add Billing Info</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Orders</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Total</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in user.orders.all|slice:":5" %}
+                                <tr>
+                                    <td>{{ order.order_id }}</td>
+                                    <td>{{ order.created_at|date:"M d, Y" }}</td>
+                                    <td><span class="badge bg-{% if order.order_status == 'DELIVERED' %}success{% elif order.order_status == 'CANCELLED' %}danger{% else %}warning{% endif %}">{{ order.order_status }}</span></td>
+                                    <td>${{ order.total_amount }}</td>
+                                    <td><a href="{% url 'orders:detail' order_id=order.order_id %}" class="btn btn-sm btn-outline-primary">View</a></td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No orders yet.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if user.orders.all %}
+                    <a href="{% url 'orders:list' %}" class="btn btn-outline-primary">View All Orders</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if user.role == 'SELLER' %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Your Store</h5>
+                </div>
+                <div class="card-body">
+                    {% if user.store %}
+                        <h5>{{ user.store.store_name }}</h5>
+                        <p><strong>Subdomain:</strong> {{ user.store.subdomain_name }}</p>
+                        <p><strong>Products:</strong> {{ user.store.products.count }}</p>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'stores:detail' subdomain=user.store.subdomain_name %}" class="btn btn-primary">View Store</a>
+                            <a href="{% url 'stores:edit' subdomain=user.store.subdomain_name %}" class="btn btn-outline-primary">Edit Store</a>
+                        </div>
+                    {% else %}
+                        <p>You don't have a store yet.</p>
+                        <a href="{% url 'stores:create' %}" class="btn btn-primary">Create Store</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

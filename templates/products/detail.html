@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load product_filters %}
+
+{% block title %}{{ product.name }} - TechShelf{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'landing:home' %}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'products:list' %}">Products</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'products:category' category=product.category %}">{{ product.category }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <!-- Product Image -->
+    <div class="col-md-5">
+        <div class="card">
+            {% if product.image %}
+                <img src="{{ product.image.url }}" class="card-img-top img-fluid" alt="{{ product.name }}">
+            {% else %}
+                <div class="card-img-top bg-light text-center py-5">
+                    <span class="display-1">{{ product.name|slice:":1" }}</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Product Details -->
+    <div class="col-md-7">
+        <h2 class="mb-2">{{ product.name }}</h2>
+        <p class="text-muted">
+            Category: <a href="{% url 'products:category' category=product.category %}">{{ product.category }}</a> | 
+            Store: <a href="{% url 'stores:detail' subdomain=product.store.subdomain_name %}">{{ product.store.store_name }}</a>
+        </p>
+        
+        <div class="d-flex align-items-center mb-3">
+            <h3 class="text-primary mb-0 me-3">${{ product.price }}</h3>
+            {% if product.stock > 0 %}
+                <span class="badge bg-success">In Stock ({{ product.stock }})</span>
+            {% elif product.stock <= 0 %}
+                <span class="badge bg-danger">Out of Stock</span>
+            {% elif product.stock <= 5 %}
+                <span class="badge bg-warning">Low Stock ({{ product.stock }})</span>
+            {% endif %}
+        </div>
+        
+        <p class="mb-4">
+            {{ product.description }}
+        </p>
+        
+        <!-- Likes -->
+        <div class="d-flex align-items-center mb-4">
+            <form action="{% url 'products:like' product_id=product.product_id %}" method="post" class="me-3">
+                {% csrf_token %}
+                {% with product.like_set.all|get_attribute:"user" as user_list %}
+                    <button type="submit" class="btn {% if user in user_list %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                        <i class="bi bi-heart-fill"></i> {{ product.likes }} Likes
+                    </button>
+                {% endwith %}
+            </form>
+            
+            <!-- Social Share Buttons -->
+            <div class="d-flex gap-2">
+                <a href="#" class="btn btn-outline-primary"><i class="bi bi-facebook"></i></a>
+                <a href="#" class="btn btn-outline-info"><i class="bi bi-twitter"></i></a>
+                <a href="#" class="btn btn-outline-success"><i class="bi bi-whatsapp"></i></a>
+            </div>
+        </div>
+        
+        {% if product.stock > 0 %}
+            <!-- Add to Cart Form -->
+            <form action="{% url 'orders:add_to_cart' product_id=product.product_id %}" method="get" class="mb-4">
+                <div class="row g-3 align-items-center">
+                    <div class="col-auto">
+                        <label for="quantity" class="col-form-label">Quantity:</label>
+                    </div>
+                    <div class="col-auto">
+                        <input type="number" id="quantity" name="quantity" class="form-control" min="1" max="{{ product.stock }}" value="1">
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-success"><i class="bi bi-cart-plus"></i> Add to Cart</button>
+                    </div>
+                </div>
+            </form>
+        {% endif %}
+        
+        {% if user == product.store.user %}
+            <div class="mt-4">
+                <a href="{% url 'products:edit' product_id=product.product_id %}" class="btn btn-primary">Edit Product</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Product Specifications and Related Products -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="productTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="specs-tab" data-bs-toggle="tab" data-bs-target="#specs" type="button" role="tab" aria-controls="specs" aria-selected="true">Specifications</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">Reviews</button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="productTabContent">
+                    <div class="tab-pane fade show active" id="specs" role="tabpanel" aria-labelledby="specs-tab">
+                        <h5>Product Specifications</h5>
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Category:</th>
+                                    <td>{{ product.category }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Seller:</th>
+                                    <td>{{ product.store.store_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Added On:</th>
+                                    <td>{{ product.created_at|date:"F d, Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Last Updated:</th>
+                                    <td>{{ product.updated_at|date:"F d, Y" }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
+                        <h5>Customer Reviews</h5>
+                        <div class="alert alert-info">
+                            Product review feature coming soon!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Related Products</h5>
+            </div>
+            <div class="card-body">
+                <!-- Placeholder for related products -->
+                <div class="list-group list-group-flush">
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Related Product 1</h6>
+                            <small>$99.99</small>
+                        </div>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Related Product 2</h6>
+                            <small>$149.99</small>
+                        </div>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Related Product 3</h6>
+                            <small>$79.99</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

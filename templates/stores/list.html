@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Browse Stores - TechShelf{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Browse Stores</h1>
+        <hr>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-10">
+                        <input type="text" class="form-control" id="search" name="search" 
+                               placeholder="Search for stores..." value="{{ request.GET.search|default:'' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Search</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% if stores %}
+        {% for store in stores %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    {% if store.theme.logo_url %}
+                        <img src="{{ store.theme.logo_url.url }}" class="card-img-top" alt="{{ store.store_name }}">
+                    {% else %}
+                        <div class="card-img-top bg-light text-center py-5">
+                            <span class="display-4">{{ store.store_name|slice:":1" }}</span>
+                        </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ store.store_name }}</h5>
+                        <p class="card-text">A store by {{ store.user.username }}</p>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                {{ store.products.count }} products | 
+                                Rating: 
+                                {% with store.ratings.all as ratings %}
+                                    {% if ratings %}
+                                        {% with ratings|length as rating_count %}
+                                            {% with ratings|dictsort:"score"|last as average_rating %}
+                                                {{ average_rating.score }} ⭐ ({{ rating_count }} reviews)
+                                            {% endwith %}
+                                        {% endwith %}
+                                    {% else %}
+                                        No ratings yet
+                                    {% endif %}
+                                {% endwith %}
+                            </small>
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{% url 'stores:detail' subdomain=store.subdomain_name %}" class="btn btn-primary">Visit Store</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                No stores found. {% if request.GET.search %}Try a different search term.{% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Pagination -->
+<nav aria-label="Store pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        <li class="page-item disabled">
+            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+        </li>
+        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+        <li class="page-item"><a class="page-link" href="#">2</a></li>
+        <li class="page-item"><a class="page-link" href="#">3</a></li>
+        <li class="page-item">
+            <a class="page-link" href="#">Next</a>
+        </li>
+    </ul>
+</nav>
+
+{% endblock %}
