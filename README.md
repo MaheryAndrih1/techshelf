@@ -3,7 +3,7 @@
 ## Overview
 
 TechShelf is an e-commerce platform that allows users to buy and sell tech products. The application is built using Django for the backend and ReactJS for the frontend. This documentation provides an overview of the application's architecture, models, views, and templates.
-
+Next step : build frontend.
 ## Table of Contents
 
 1. Architecture
