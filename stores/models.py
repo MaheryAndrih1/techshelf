@@ -14,19 +14,31 @@ class StoreTheme(models.Model):
         return self.theme_id
 
 class Store(models.Model):
-    store_id = models.CharField(max_length=50, unique=True)
+    store_id = models.CharField(max_length=50, unique=True, blank=True)
     store_name = models.CharField(max_length=255)
-    subdomain_name = models.SlugField(unique=True)
+    subdomain_name = models.SlugField(unique=True, blank=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='store')
-    theme = models.ForeignKey(StoreTheme, on_delete=models.SET_NULL, null=True, related_name='stores')
+    theme = models.ForeignKey(StoreTheme, on_delete=models.SET_NULL, null=True, blank=True, related_name='stores')
     created_at = models.DateTimeField(auto_now_add=True)
     
     def save(self, *args, **kwargs):
-        if not self.subdomain_name:
-            self.subdomain_name = slugify(self.store_name)
-        if not self.store_id:
-            # Generate a unique ID in production
-            self.store_id = f"store_{slugify(self.store_name)}"
+        # Generate subdomain_name from store_name if not provided
+        if not self.subdomain_name and self.store_name:
+            base_slug = slugify(self.store_name)
+            slug = base_slug
+            
+            # Make sure slugified name is unique
+            counter = 1
+            while Store.objects.filter(subdomain_name=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+                
+            self.subdomain_name = slug
+        
+        # Generate store_id if not provided
+        if not self.store_id and self.subdomain_name:
+            self.store_id = f"store_{self.subdomain_name}"
+            
         super().save(*args, **kwargs)
     
     def add_product(self, product):

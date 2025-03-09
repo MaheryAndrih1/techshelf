@@ -5,6 +5,14 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from .models import BillingInfo
 from .forms import RegistrationForm, ProfileEditForm, BillingInfoForm
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import get_user_model
+from .serializers import UserSerializer, UserRegisterSerializer, BillingInfoSerializer
+
+User = get_user_model()
 
 def login_view(request):
     if request.method == 'POST':
@@ -78,3 +86,72 @@ def upgrade_to_seller_view(request):
         messages.success(request, 'Your account has been upgraded to seller.')
         return redirect('users:profile')
     return render(request, 'users/upgrade_seller.html')
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    permission_classes = [permissions.AllowAny]
+    serializer_class = UserRegisterSerializer
+
+class LoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+        
+        # Debug log to see what's being sent
+        print(f"Login attempt with email: {email}, password: {password[:1]}***")
+        
+        user = authenticate(request, username=email, password=password)
+        if user is not None:
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'user': UserSerializer(user).data
+            })
+        
+        # Add more detailed error message
+        return Response({'error': 'Invalid credentials. Please check your email and password.'}, 
+                       status=status.HTTP_401_UNAUTHORIZED)
+
+class LogoutView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        try:
+            refresh_token = request.data.get('refresh')
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response(status=status.HTTP_205_RESET_CONTENT)
+        except Exception:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_object(self):
+        return self.request.user
+
+class BillingInfoView(generics.RetrieveUpdateAPIView):
+    serializer_class = BillingInfoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_object(self):
+        billing_info, created = BillingInfo.objects.get_or_create(user=self.request.user)
+        return billing_info
+
+class UpgradeToSellerView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        user = request.user
+        if user.role == 'SELLER':
+            return Response({'message': 'User is already a seller'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.role = 'SELLER'
+        user.save()
+        
+        return Response({'message': 'Account upgraded to seller successfully'}, status=status.HTTP_200_OK)

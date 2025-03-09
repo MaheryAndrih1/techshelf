@@ -1,3 +1,42 @@
+# TechShelf - E-Commerce Platform
+
+TechShelf is a comprehensive e-commerce platform for technology products, featuring multi-vendor support, user authentication, product management, order processing, and more.
+
+## Features
+
+- User authentication and account management
+- Seller dashboard with store management
+- Product listings and search
+- Shopping cart functionality
+- Secure checkout process
+- Order management
+- Sales analytics and reporting
+- Notification system
+
+## Technology Stack
+
+- **Backend**: Django REST Framework
+- **Frontend**: React (coming soon)
+- **Database**: SQLite (development), PostgreSQL (production)
+- **Authentication**: JWT (JSON Web Tokens)
+- **Documentation**: Swagger/OpenAPI
+
+## API Documentation
+
+Full API documentation is available at `/api/swagger/` when the server is running. You can also view it in Markdown format in the `api_documentation.md` file.
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.8+
+- pip
+- virtualenv (recommended)
+
+### Installation
+
+1. Clone the repository
+
 # TechShelf Application Documentation
 
 ## Overview
