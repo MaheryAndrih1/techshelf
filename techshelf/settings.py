@@ -51,13 +51,15 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# CORS settings - allow React frontend to access API
-CORS_ALLOW_ALL_ORIGINS = True  # For development only, restrict in production
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",     
+    "http://127.0.0.1:5173",    
+]
 CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'techshelf.urls'
 
-# You can simplify the TEMPLATES setting since you won't use Django templates:
+
 
 TEMPLATES = [
     {

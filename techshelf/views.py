@@ -8,7 +8,7 @@ def health_check(request):
     """API health check endpoint"""
     return Response({
         'status': 'ok',
-        'message': 'TechShelf API is running'
+        'message': 'Hello Mahery'
     })
 
 @api_view(['GET'])
