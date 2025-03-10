@@ -57,10 +57,12 @@ CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'techshelf.urls'
 
+# You can simplify the TEMPLATES setting since you won't use Django templates:
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

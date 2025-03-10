@@ -8,8 +8,6 @@ The TechShelf API provides programmatic access to TechShelf's e-commerce platfor
 
 All API endpoints are relative to the base URL: `http://localhost:8000/`
 
-In production: `https://api.techshelf.com/`
-
 ## Authentication
 
 TechShelf API uses JWT (JSON Web Token) authentication. To access protected endpoints, you need to include the access token in the Authorization header.
@@ -739,7 +737,7 @@ or
             "is_read": false,
             "created_at": "2023-01-17T14:30:00Z"
         },
-        // More notifications...
+
     ]
 }
 ```
