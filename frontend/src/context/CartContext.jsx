@@ -18,20 +18,15 @@ export const CartProvider = ({ children }) => {
     setLoading(true);
     try {
       const response = await api.get('/orders/cart/');
-      console.log('Raw cart data from API:', response.data);
       
-      // Initialize cartData with proper structure
       let cartData = response.data || { items: [] };
       if (!Array.isArray(cartData.items)) {
         cartData.items = [];
       }
       
-      // For each item, make sure we load the full product details if they're missing
       const updatedItems = await Promise.all(cartData.items.map(async (item) => {
-        // If the product details are missing or incomplete
-        if (!item.product || !item.product.name || item.product.name === "Unknown Product") {
+        if (!item.product || !item.product.image) {
           try {
-            // Fetch the product details directly
             const productResponse = await api.get(`/products/${item.product_id}/`);
             return {
               ...item,
@@ -39,7 +34,6 @@ export const CartProvider = ({ children }) => {
             };
           } catch (err) {
             console.error(`Failed to fetch product details for ${item.product_id}:`, err);
-            // Return the item with basic product info
             return {
               ...item,
               product: {
@@ -83,7 +77,8 @@ export const CartProvider = ({ children }) => {
         quantity,
       });
       
-      setCart(response.data);
+      await fetchCart();
+      
       return response.data;
     } catch (err) {
       const message = err.response?.data?.error || 'Failed to add item to cart';
@@ -98,9 +93,37 @@ export const CartProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     
+    const previousCart = { ...cart };
+    
     try {
       const response = await api.delete(`/orders/cart/remove/${productId}/`);
-      setCart(response.data);
+      
+      if (response.data && Array.isArray(response.data.items)) {
+        const processedItems = response.data.items.map(item => {
+          const previousItem = previousCart.items?.find(prevItem => 
+            prevItem.product_id === item.product_id
+          );
+          
+          if (previousItem && previousItem.product) {
+            return {
+              ...item,
+              product: {
+                ...item.product,
+                ...previousItem.product
+              }
+            };
+          }
+          return item;
+        });
+        
+        setCart({
+          ...response.data,
+          items: processedItems
+        });
+      } else {
+        setCart(response.data);
+      }
+      
       return response.data;
     } catch (err) {
       const message = err.response?.data?.error || 'Failed to remove item from cart';
@@ -112,23 +135,18 @@ export const CartProvider = ({ children }) => {
   };
 
   const updateQuantity = async (productId, quantity) => {
-    // Don't show global loading indicator for quantity updates
     setError(null);
     
     if (quantity < 1) {
-      // If quantity is less than 1, just remove the item
       return removeFromCart(productId);
     }
   
-    // Update cart optimistically - preserve structure
     if (cart && cart.items) {
       const updatedItems = cart.items.map(item => {
         if (item.product_id === productId) {
-          // Keep the same structure but update the quantity
           return {
             ...item,
             quantity,
-            // If item has a total_price property, update it
             ...(item.total_price && { 
               total_price: (parseFloat(item.price || (item.total_price / item.quantity)) * quantity).toFixed(2) 
             })
@@ -137,7 +155,6 @@ export const CartProvider = ({ children }) => {
         return item;
       });
       
-      // Update local state immediately for responsive UI
       setCart({
         ...cart,
         items: updatedItems
@@ -147,18 +164,14 @@ export const CartProvider = ({ children }) => {
     try {
       const response = await api.put(`/orders/cart/update/${productId}/`, { quantity });
       
-      // Process server response to maintain product data consistency
       if (response?.data?.items) {
         const processedItems = response.data.items.map(item => {
-          // If the item doesn't have product details but has product_name
           if (!item.product && item.product_name) {
-            // Create a compatible product structure
             return {
               ...item,
               product: {
                 name: item.product_name,
                 price: parseFloat(item.total_price) / item.quantity,
-                // Keep image if we had it before
                 image: cart?.items?.find(i => i.product_id === item.product_id)?.product?.image || null
               }
             };
@@ -177,7 +190,6 @@ export const CartProvider = ({ children }) => {
       const message = err.response?.data?.error || 'Failed to update cart';
       setError(message);
       
-      // Refresh cart to get back to a valid state
       await fetchCart();
       throw new Error(message);
     }
@@ -192,7 +204,6 @@ export const CartProvider = ({ children }) => {
         discount_code: discountCode,
       });
       
-      // Refresh cart to show updated prices
       await fetchCart();
       
       return response.data;
@@ -212,7 +223,6 @@ export const CartProvider = ({ children }) => {
     try {
       const response = await api.post('/orders/checkout/', checkoutData);
       
-      // Clear cart after successful checkout
       setCart(null);
       
       return response.data;

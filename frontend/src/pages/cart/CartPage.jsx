@@ -11,20 +11,6 @@ const CartPage = () => {
   const [promoError, setPromoError] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Debug the cart structure when it changes
-    if (cart && cart.items) {
-      console.log('Cart items structure:', cart.items);
-    }
-  }, [cart]);
-
-  useEffect(() => {
-    // Debug the cart structure when it changes
-    if (cart && cart.items) {
-      console.log('Cart items in page:', cart.items);
-    }
-  }, [cart]);
-
   const handleQuantityChange = async (productId, newQuantity) => {
     try {
       await updateQuantity(productId, newQuantity);
@@ -63,7 +49,6 @@ const CartPage = () => {
     navigate('/checkout');
   };
 
-  // Use useMemo for cart calculations
   const cartTotals = useMemo(() => {
     if (!cart?.items) return { subtotal: 0, total: 0, itemCount: 0 };
     
@@ -74,41 +59,43 @@ const CartPage = () => {
     }), { subtotal: 0, total: 0, itemCount: 0 });
   }, [cart]);
 
-  // Simple cart item component with improved error handling
   const CartItem = ({ item }) => {
-    // Enhanced property extraction that works with both data structures 
     const productName = extractProductName(item);
     const productPrice = extractProductPrice(item);
-    const productImage = item.product?.image || null;
-    const productId = item.product_id || item.id;
+    const productId = item.product_id || (item.product?.product_id) || item.id;
     const [quantity, setQuantity] = useState(item.quantity || 1);
     const [updating, setUpdating] = useState(false);
     
-    // Helper functions to extract data from both possible structures
+    const productImage = item.product?.image || 
+                         (typeof item.image === 'string' ? item.image : null);
+    
     function extractProductName(item) {
       if (item.product_name) return item.product_name;
       if (item.product?.name) return item.product.name;
       
-      // Last resort fallback
       const id = item.product_id || '';
-      return id.startsWith('prod_') ? `${id.substring(5).replace(/-/g, ' ')}` : 'Product';
+      return id.startsWith('prod_') ? 
+        id.substring(5).split('-').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ') : 'Product';
     }
     
     function extractProductPrice(item) {
-      if (item.price) return parseFloat(item.price);
-      if (item.product?.price) return parseFloat(item.product.price);
-      if (item.total_price && item.quantity) return parseFloat(item.total_price) / item.quantity;
+      if (item.price && !isNaN(parseFloat(item.price))) 
+        return parseFloat(item.price);
+      if (item.product?.price && !isNaN(parseFloat(item.product.price))) 
+        return parseFloat(item.product.price);
+      if (item.total_price && item.quantity && !isNaN(parseFloat(item.total_price)) && item.quantity > 0) 
+        return parseFloat(item.total_price) / item.quantity;
       return 0;
     }
     
-    // Update local quantity when item.quantity changes from external updates
     useEffect(() => {
       if (item.quantity !== quantity && !updating) {
         setQuantity(item.quantity);
       }
     }, [item.quantity]);
     
-    // Debounce the API call when quantity changes
     useEffect(() => {
       if (quantity === item.quantity) return;
       
@@ -117,13 +104,12 @@ const CartPage = () => {
         try {
           await handleQuantityChange(productId, quantity);
         } catch (err) {
-          // If there's an error, revert to the original quantity
           setQuantity(item.quantity);
           console.error('Failed to update quantity:', err);
         } finally {
           setUpdating(false);
         }
-      }, 500); // Wait 500ms after typing stops before making API call
+      }, 500);
       
       return () => clearTimeout(timer);
     }, [quantity, productId, item.quantity]);
@@ -131,7 +117,7 @@ const CartPage = () => {
     return (
       <div className="flex items-center py-4 border-b">
         <div className="w-2/5 flex items-center">
-          <div className="w-16 h-16 bg-gray-200 mr-4 flex items-center justify-center">
+          <div className="w-16 h-16 bg-gray-200 mr-4 flex items-center justify-center relative overflow-hidden">
             {productImage ? (
               <img 
                 src={productImage} 
@@ -246,7 +232,6 @@ const CartPage = () => {
         <h1 className="text-2xl font-bold mb-6">Shopping Cart ({cartTotals.itemCount} items)</h1>
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-          {/* Cart Items */}
           <div className="p-6">
             <div className="flex font-bold text-gray-500 pb-2 border-b">
               <div className="w-2/5">Product</div>
@@ -260,7 +245,6 @@ const CartPage = () => {
             ))}
           </div>
           
-          {/* Cart Summary */}
           <div className="bg-gray-50 p-6">
             <div className="flex justify-between mb-2">
               <span>Subtotal:</span>
@@ -289,7 +273,6 @@ const CartPage = () => {
               <span>${cart.total?.toFixed(2) || '0.00'}</span>
             </div>
             
-            {/* Promotion Code */}
             <form onSubmit={handleApplyPromo} className="flex mt-4">
               <input
                 type="text"
