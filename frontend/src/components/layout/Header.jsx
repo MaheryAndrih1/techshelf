@@ -16,7 +16,7 @@ const Header = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      setIsMenuOpen(false); // Close mobile menu when searching
+      setIsMenuOpen(false); 
       navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
@@ -50,7 +50,7 @@ const Header = () => {
               <input
                 type="text"
                 placeholder="Search products..."
-                className="w-full px-4 py-1 rounded-l text-gray-800"
+                className="w-full px-4 py-1 rounded-l text-gray-800 bg-white"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -68,54 +68,53 @@ const Header = () => {
             <Link to="/products" className="hover:text-blue-200" onClick={closeMenus}>Products</Link>
             <Link to="/stores" className="hover:text-blue-200" onClick={closeMenus}>Stores</Link>
             
+            {/* Cart link - shown for all users */}
+            <Link 
+              to="/cart" 
+              className="flex items-center hover:text-blue-200" 
+              onClick={closeMenus}
+            >
+              <span>Cart</span>
+              {cartItemCount > 0 && (
+                <span className="ml-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                  {cartItemCount}
+                </span>
+              )}
+            </Link>
+            
             {isAuthenticated ? (
-              <>
-                <Link 
-                  to="/cart" 
-                  className="flex items-center hover:text-blue-200" 
-                  onClick={closeMenus}
+              <div className="relative">
+                <button 
+                  className="flex items-center hover:text-blue-200"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
-                  <span>Cart</span>
-                  {cartItemCount > 0 && (
-                    <span className="ml-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                      {cartItemCount}
-                    </span>
-                  )}
-                </Link>
+                  <span>{currentUser?.username || 'Account'}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
                 
-                <div className="relative">
-                  <button 
-                    className="flex items-center hover:text-blue-200"
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  >
-                    <span>{currentUser?.username || 'Account'}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                  
-                  {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded shadow-lg py-2 z-50">
-                      <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100" onClick={closeMenus}>Profile</Link>
-                      <Link to="/orders" className="block px-4 py-2 hover:bg-gray-100" onClick={closeMenus}>Orders</Link>
-                      <Link to="/notifications" className="block px-4 py-2 hover:bg-gray-100" onClick={closeMenus}>Notifications</Link>
-                      
-                      {isSeller ? (
-                        <Link to="/seller/dashboard" className="block px-4 py-2 hover:bg-gray-100" onClick={closeMenus}>Seller Dashboard</Link>
-                      ) : (
-                        <Link to="/become-seller" className="block px-4 py-2 hover:bg-gray-100" onClick={closeMenus}>Become a Seller</Link>
-                      )}
-                      
-                      <button
-                        onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </>
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded shadow-lg py-2 z-50">
+                    <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100" onClick={closeMenus}>Profile</Link>
+                    <Link to="/orders" className="block px-4 py-2 hover:bg-gray-100" onClick={closeMenus}>Orders</Link>
+                    <Link to="/notifications" className="block px-4 py-2 hover:bg-gray-100" onClick={closeMenus}>Notifications</Link>
+                    
+                    {isSeller ? (
+                      <Link to="/seller/dashboard" className="block px-4 py-2 hover:bg-gray-100" onClick={closeMenus}>Seller Dashboard</Link>
+                    ) : (
+                      <Link to="/become-seller" className="block px-4 py-2 hover:bg-gray-100" onClick={closeMenus}>Become a Seller</Link>
+                    )}
+                    
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 <Link to="/login" className="hover:text-blue-200" onClick={closeMenus}>Login</Link>
@@ -137,7 +136,7 @@ const Header = () => {
           </button>
         </div>
 
-        {/* Mobile Search - Only show when menu is open */}
+        {/* Mobile Search */}
         {isMenuOpen && (
           <div className="md:hidden mt-3">
             <form onSubmit={handleSearch} className="flex">
@@ -164,16 +163,18 @@ const Header = () => {
             <Link to="/products" className="block py-2 hover:text-blue-200" onClick={closeMenus}>Products</Link>
             <Link to="/stores" className="block py-2 hover:text-blue-200" onClick={closeMenus}>Stores</Link>
             
+            {/* Mobile cart link */}
+            <Link to="/cart" className="flex items-center py-2 hover:text-blue-200" onClick={closeMenus}>
+              <span>Cart</span>
+              {cartItemCount > 0 && (
+                <span className="ml-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                  {cartItemCount}
+                </span>
+              )}
+            </Link>
+            
             {isAuthenticated ? (
               <>
-                <Link to="/cart" className="flex items-center py-2 hover:text-blue-200" onClick={closeMenus}>
-                  <span>Cart</span>
-                  {cartItemCount > 0 && (
-                    <span className="ml-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                      {cartItemCount}
-                    </span>
-                  )}
-                </Link>
                 <Link to="/profile" className="block py-2 hover:text-blue-200" onClick={closeMenus}>Profile</Link>
                 <Link to="/orders" className="block py-2 hover:text-blue-200" onClick={closeMenus}>Orders</Link>
                 <Link to="/notifications" className="block py-2 hover:text-blue-200" onClick={closeMenus}>Notifications</Link>

@@ -21,13 +21,12 @@ const OrderListPage = () => {
       setLoading(true);
       try {
         const response = await api.get('/orders/orders/');
-        // Make sure we always have an array
         setOrders(response.data?.results || response.data || []);
         console.log("Orders data:", response.data); // Debug log
       } catch (err) {
         setError('Failed to fetch orders');
         console.error("Error fetching orders:", err);
-        // Set default empty array on error
+        
         setOrders([]);
       } finally {
         setLoading(false);
@@ -41,7 +40,7 @@ const OrderListPage = () => {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
-          <div className="loader">Loading...</div>
+          <div className="loader"></div>
         </div>
       </Layout>
     );

@@ -21,16 +21,13 @@ export const AuthProvider = ({ children }) => {
         setCurrentUser(JSON.parse(user));
         
         try {
-          // Verify token is still valid by fetching profile
           const response = await api.get('/users/profile/');
           const updatedUser = response.data;
-          
-          // Update local storage with latest user data
+
           localStorage.setItem('user', JSON.stringify(updatedUser));
           setCurrentUser(updatedUser);
         } catch (err) {
           console.log("Token validation failed, logging out");
-          // If token is invalid, log user out
           logout();
         }
       }
@@ -53,7 +50,7 @@ export const AuthProvider = ({ children }) => {
       
       const { user, access, refresh } = response.data;
       
-      // Store tokens and user data
+
       localStorage.setItem('accessToken', access);
       localStorage.setItem('refreshToken', refresh);
       localStorage.setItem('user', JSON.stringify(user));
@@ -89,11 +86,11 @@ export const AuthProvider = ({ children }) => {
       if (response.data && response.data.user) {
         return login(userData.email, userData.password);
       } else {
-        // If login info wasn't returned, manually login
+  
         return login(userData.email, userData.password);
       }
     } catch (err) {
-      // Improved error handling to show detailed backend validation errors
+
       console.error('Registration error details:', err.response?.data);
       
       const message = err.response?.data?.error || 
@@ -116,7 +113,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setCurrentUser(null);
     
-    // Attempt to notify server about logout (but don't wait for response)
     const refreshToken = localStorage.getItem('refreshToken');
     if (refreshToken) {
       api.post('/users/logout/', { refresh: refreshToken }).catch(() => {});

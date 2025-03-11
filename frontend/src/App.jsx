@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
-
 // Pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
@@ -27,7 +26,6 @@ import SellerOrderDetailPage from './pages/seller/SellerOrderDetailPage';
 const ProtectedRoute = ({ element, requiresSeller = false }) => {
   const { isAuthenticated, isSeller, loading } = useAuth();
   
-  // Show loading indicator while checking authentication
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -47,7 +45,7 @@ const ProtectedRoute = ({ element, requiresSeller = false }) => {
   return element;
 };
 
-// Use this component to wrap our routes after providers are initialized
+
 const AppRoutes = () => {
   return (
     <Routes>
@@ -60,8 +58,10 @@ const AppRoutes = () => {
       <Route path="/stores" element={<StoreListPage />} />
       <Route path="/stores/:subdomain" element={<StoreDetailPage />} />
       
+      {/* Cart is now public - guest cart feature */}
+      <Route path="/cart" element={<CartPage />} />
+      
       {/* Protected Routes */}
-      <Route path="/cart" element={<ProtectedRoute element={<CartPage />} />} />
       <Route path="/checkout" element={<ProtectedRoute element={<CheckoutPage />} />} />
       <Route path="/orders" element={<ProtectedRoute element={<OrderListPage />} />} />
       <Route path="/orders/:orderId" element={<ProtectedRoute element={<OrderDetailPage />} />} />

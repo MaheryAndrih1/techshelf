@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
@@ -15,6 +15,11 @@ const StoreDetailPage = () => {
   const [userRating, setUserRating] = useState({ score: 5, comment: '' });
   const { isAuthenticated, currentUser } = useAuth();
   const { addToCart } = useCart();
+  const navigate = useNavigate();
+  const [displayedReviews, setDisplayedReviews] = useState([]);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [hasMoreReviews, setHasMoreReviews] = useState(false);
+  const reviewsPerPage = 2;
 
   useEffect(() => {
     const fetchStoreData = async () => {
@@ -28,9 +33,22 @@ const StoreDetailPage = () => {
         const productsResponse = await api.get(`/products/?store=${storeResponse.data.store_id}`);
         setProducts(productsResponse.data.results || productsResponse.data);
         
-        // Fetch store ratings
-        const ratingsResponse = await api.get(`/stores/${subdomain}/ratings/`);
-        setRatings(ratingsResponse.data.results || ratingsResponse.data);
+        // Fetch store ratings 
+        const ratingsResponse = await api.get(`/stores/${subdomain}/ratings/?limit=100`);
+        console.log('Ratings data:', ratingsResponse.data);
+        
+        // Set ratings directly from the results array
+        let allReviews = [];
+        if (ratingsResponse.data?.results && Array.isArray(ratingsResponse.data.results)) {
+          allReviews = ratingsResponse.data.results;
+        } else if (Array.isArray(ratingsResponse.data)) {
+          allReviews = ratingsResponse.data;
+        }
+        
+        console.log(`Found ${allReviews.length} total reviews`);
+        setRatings(allReviews);
+        setDisplayedReviews(allReviews.slice(0, reviewsPerPage));
+        setHasMoreReviews(allReviews.length > reviewsPerPage);
       } catch (err) {
         setError('Failed to load store data');
         console.error(err);
@@ -40,7 +58,19 @@ const StoreDetailPage = () => {
     };
     
     fetchStoreData();
-  }, [subdomain]);
+  }, [subdomain, reviewsPerPage]);
+
+  const loadMoreReviews = () => {
+    const nextPage = reviewsPage + 1;
+    const endIndex = nextPage * reviewsPerPage;
+    
+
+    setDisplayedReviews(ratings.slice(0, endIndex));
+    setReviewsPage(nextPage);
+    setHasMoreReviews(endIndex < ratings.length);
+    
+    console.log(`Showing ${Math.min(endIndex, ratings.length)} of ${ratings.length} total reviews`);
+  };
 
   const handleRatingSubmit = async (e) => {
     e.preventDefault();
@@ -51,30 +81,62 @@ const StoreDetailPage = () => {
     }
     
     try {
-      await api.post(`/stores/${subdomain}/rate/`, {
+
+      const ratingData = {
         score: userRating.score,
-        comment: userRating.comment
-      });
+        comment: userRating.comment,
+        user_name: currentUser.username 
+      };
       
-      // Refresh ratings after submission
-      const ratingsResponse = await api.get(`/stores/${subdomain}/ratings/`);
-      setRatings(ratingsResponse.data.results || ratingsResponse.data);
+
+      const response = await api.post(`/stores/${subdomain}/rate/`, ratingData);
+      console.log("Review submission response:", response.data);
       
-      // Reset form
+      
+      const newRating = {
+        rating_id: response.data?.rating_id || `temp-${Date.now()}`,
+        score: userRating.score,
+        comment: userRating.comment,
+        timestamp: new Date().toISOString(),
+        user: currentUser.username, 
+        user_name: currentUser.username,
+        user_id: currentUser.id
+      };
+      
+      const updatedRatings = [newRating, ...ratings];
+      setRatings(updatedRatings);
+      setDisplayedReviews([newRating, ...displayedReviews]);
+      
+
       setUserRating({ score: 5, comment: '' });
+      
+      
     } catch (err) {
       console.error('Failed to submit rating:', err);
+      alert('Failed to submit your review. Please try again.');
     }
   };
 
-  const handleAddToCart = async (productId) => {
-    if (!isAuthenticated) {
-      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-      return;
-    }
-    
+  
+  const storedReviewUserData = React.useMemo(() => {
     try {
+      return JSON.parse(localStorage.getItem('reviewUserData') || '{}');
+    } catch (err) {
+      return {};
+    }
+  }, []);
+
+  const handleAddToCart = async (productId) => {
+    try {
+      if (!isAuthenticated) {
+        sessionStorage.setItem('redirectToCartAfterAuth', 'true');
+      }
       await addToCart(productId, 1);
+      
+
+      if (isAuthenticated) {
+        navigate('/cart');
+      }
     } catch (err) {
       console.error('Failed to add to cart:', err);
     }
@@ -84,7 +146,7 @@ const StoreDetailPage = () => {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
-          <div className="loader">Loading...</div>
+          <div className="loader"></div>
         </div>
       </Layout>
     );
@@ -266,7 +328,6 @@ const StoreDetailPage = () => {
                       placeholder="Share your experience with this store"
                     ></textarea>
                   </div>
-                  
                   <button
                     type="submit"
                     className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
@@ -276,47 +337,69 @@ const StoreDetailPage = () => {
                 </form>
               </div>
             )}
-            
+
             {/* Reviews List */}
-            {ratings.length === 0 ? (
+            {!ratings || ratings.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-600">This store has no reviews yet</p>
               </div>
             ) : (
               <div className="space-y-6">
-                {ratings.map((rating) => (
-                  <div key={rating.rating_id} className="border-b pb-6 last:border-b-0">
-                    <div className="flex justify-between mb-2">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3 text-blue-800 font-semibold">
-                          {rating.user_name?.charAt(0) || 'U'}
-                        </div>
-                        <div>
-                          <p className="font-medium">{rating.user_name || 'Anonymous'}</p>
-                          <div className="flex">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <svg
-                                key={star}
-                                xmlns="http://www.w3.org/2000/svg"
-                                className={`h-4 w-4 ${
-                                  star <= rating.score ? 'text-yellow-400' : 'text-gray-300'
-                                }`}
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                            ))}
+                {displayedReviews.map((rating) => {
+                  const username = typeof rating.user === 'string' 
+                    ? rating.user 
+                    : rating.user_name || rating.username || 
+                      (rating.user && (typeof rating.user === 'object') ? 
+                        (rating.user.username || rating.user.name) : null) || 
+                      'Anonymous';
+                  
+                  const firstLetter = username.charAt(0).toUpperCase();
+                  
+                  return (
+                    <div key={rating.rating_id} className="border-b pb-6 last:border-b-0">
+                      <div className="flex justify-between mb-2">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3 text-blue-800 font-semibold">
+                            {firstLetter}
+                          </div>
+                          <div>
+                            <p className="font-medium">{username}</p>
+                            <div className="flex">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <svg
+                                  key={star}
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className={`h-4 w-4 ${
+                                    star <= rating.score ? 'text-yellow-400' : 'text-gray-300'
+                                  }`}
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                >
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                              ))}
+                            </div>
                           </div>
                         </div>
+                        <span className="text-sm text-gray-500">
+                          {new Date(rating.timestamp).toLocaleDateString()}
+                        </span>
                       </div>
-                      <span className="text-sm text-gray-500">
-                        {new Date(rating.timestamp).toLocaleDateString()}
-                      </span>
+                      {rating.comment && <p className="text-gray-700">{rating.comment}</p>}
                     </div>
-                    {rating.comment && <p className="text-gray-700">{rating.comment}</p>}
+                  );
+                })}
+                
+                {hasMoreReviews && (
+                  <div className="text-center pt-4">
+                    <button 
+                      onClick={loadMoreReviews}
+                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 transition-colors"
+                    >
+                      See More Reviews
+                    </button>
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>

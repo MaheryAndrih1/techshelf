@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 import Layout from '../../components/layout/Layout';
 
 const RegisterPage = () => {
@@ -12,7 +13,19 @@ const RegisterPage = () => {
   });
   const [formError, setFormError] = useState('');
   const { register, loading, error } = useAuth();
+  const { mergeCartsAfterLogin } = useCart();
   const navigate = useNavigate();
+
+  // Save guest cart data for later use
+  const [guestCartData, setGuestCartData] = useState(() => {
+    try {
+      const savedCart = localStorage.getItem('techshelf_guest_cart');
+      return savedCart ? JSON.parse(savedCart) : null;
+    } catch (err) {
+      console.error("Error loading guest cart:", err);
+      return null;
+    }
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,9 +62,24 @@ const RegisterPage = () => {
         username,
         email,
         password,
-        confirmPassword // Pass confirmPassword to register function
+        confirmPassword
       });
-      navigate('/');
+      
+      try {
+        console.log("Attempting to merge cart after registration");
+        await mergeCartsAfterLogin();
+        console.log("Cart merge completed");
+      } catch (cartErr) {
+        console.error("Error merging carts after registration:", cartErr);
+      }
+      
+      const redirectToCart = sessionStorage.getItem('redirectToCartAfterAuth');
+      if (redirectToCart) {
+        sessionStorage.removeItem('redirectToCartAfterAuth');
+        navigate('/cart');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setFormError(err.message);
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +14,7 @@ const ProductDetailPage = () => {
   const [liked, setLiked] = useState(false);
   const { isAuthenticated, currentUser } = useAuth();
   const { addToCart, loading: cartLoading } = useCart();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -45,13 +46,16 @@ const ProductDetailPage = () => {
   };
 
   const handleAddToCart = async () => {
-    if (!isAuthenticated) {
-      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-      return;
-    }
-    
     try {
+      if (!isAuthenticated) {
+        // Set flag to redirect to cart after login/register
+        sessionStorage.setItem('redirectToCartAfterAuth', 'true');
+      }
       await addToCart(productId, quantity);
+      
+      if (isAuthenticated) {
+        navigate('/cart');
+      }
     } catch (err) {
       console.error("Failed to add to cart:", err);
     }
@@ -67,7 +71,6 @@ const ProductDetailPage = () => {
       await api.post(`/products/${productId}/like/`);
       setLiked(!liked);
       
-      // Update product like count
       setProduct(prev => ({
         ...prev,
         likes_count: liked ? (prev.likes_count - 1) : (prev.likes_count + 1)
@@ -81,7 +84,7 @@ const ProductDetailPage = () => {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
-          <div className="loader">Loading...</div>
+          <div className="loader"></div>
         </div>
       </Layout>
     );

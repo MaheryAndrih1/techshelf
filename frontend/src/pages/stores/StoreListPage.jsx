@@ -32,14 +32,13 @@ const StoreListPage = () => {
   
   const handleSearch = (e) => {
     e.preventDefault();
-    // The effect will handle the search when searchTerm changes
   };
   
   if (loading) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
-          <div className="loader">Loading...</div>
+          <div className="loader"></div>
         </div>
       </Layout>
     );

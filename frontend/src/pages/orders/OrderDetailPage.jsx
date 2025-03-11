@@ -27,17 +27,16 @@ const OrderDetailPage = () => {
         console.log('Order data:', response.data);
         setOrder(response.data);
 
-        // Fetch product details for each order item
+
         if (response.data?.items && response.data.items.length > 0) {
           const productDetailsObj = {};
           await Promise.all(response.data.items.map(async (item) => {
             try {
-              // Try to get full product details for each product in order
               const prodResponse = await api.get(`/products/${item.product_id}/`);
               productDetailsObj[item.product_id] = prodResponse.data;
             } catch (err) {
               console.warn(`Couldn't fetch details for product ${item.product_id}:`, err);
-              // Create a placeholder product object with data from ID
+
               const nameParts = item.product_id.split('_');
               const productName = nameParts.length > 1 
                 ? nameParts[1].split('-').map(word => 
@@ -146,7 +145,7 @@ const OrderDetailPage = () => {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
-          <div className="loader">Loading...</div>
+          <div className="loader"></div>
         </div>
       </Layout>
     );

@@ -17,13 +17,12 @@ const HomePage = () => {
         const productsResponse = await api.get('/products/?limit=8');
         setFeaturedProducts(productsResponse.data.results || productsResponse.data || []);
         
-        // Make sure we have actual results before extracting categories
         const productResults = productsResponse.data.results || productsResponse.data || [];
         
-        // Safely extract categories
+        
         if (productResults.length > 0) {
           const uniqueCategories = new Set(productResults
-            .filter(product => product?.category) // Make sure category exists
+            .filter(product => product?.category) 
             .map(product => product.category));
           setCategories(Array.from(uniqueCategories).slice(0, 6));
         }
@@ -40,7 +39,6 @@ const HomePage = () => {
       } catch (err) {
         setError('Failed to load home page data');
         console.error('Error fetching products:', err);
-        // Set default empty values to prevent rendering errors
         setFeaturedProducts([]);
         setCategories([]);
       } finally {
@@ -77,7 +75,7 @@ const HomePage = () => {
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="loader">Loading...</div>
+          <div className="loader"></div>
         </div>
       ) : (
         <>

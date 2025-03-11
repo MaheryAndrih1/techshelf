@@ -5,7 +5,7 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 
 const CartPage = () => {
-  const { cart, loading, removeFromCart, updateQuantity, applyPromotion, refreshCart } = useCart();
+  const { cart, loading, removeFromCart, updateQuantity, applyPromotion, isGuestCart } = useCart();
   const { isAuthenticated } = useAuth();
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState('');
@@ -31,6 +31,11 @@ const CartPage = () => {
     e.preventDefault();
     if (!promoCode.trim()) return;
     
+    if (!isAuthenticated) {
+      setPromoError('Please log in to apply promotional codes');
+      return;
+    }
+    
     try {
       setPromoError('');
       await applyPromotion(promoCode);
@@ -41,11 +46,6 @@ const CartPage = () => {
   };
 
   const handleCheckout = () => {
-    if (!isAuthenticated) {
-      navigate('/login', { state: { from: '/cart' } });
-      return;
-    }
-    
     navigate('/checkout');
   };
 
@@ -53,8 +53,8 @@ const CartPage = () => {
     if (!cart?.items) return { subtotal: 0, total: 0, itemCount: 0 };
     
     return cart.items.reduce((acc, item) => ({
-      subtotal: acc.subtotal + (parseFloat(item.product?.price || 0) * item.quantity),
-      total: cart.total || 0,
+      subtotal: acc.subtotal + (parseFloat(item.product?.price || item.price || 0) * item.quantity),
+      total: cart.total || acc.subtotal,
       itemCount: acc.itemCount + item.quantity
     }), { subtotal: 0, total: 0, itemCount: 0 });
   }, [cart]);
@@ -73,6 +73,7 @@ const CartPage = () => {
       if (item.product_name) return item.product_name;
       if (item.product?.name) return item.product.name;
       
+
       const id = item.product_id || '';
       return id.startsWith('prod_') ? 
         id.substring(5).split('-').map(word => 
@@ -177,33 +178,13 @@ const CartPage = () => {
     );
   };
 
-  if (!isAuthenticated) {
-    return (
-      <Layout>
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Shopping Cart</h1>
-          <div className="bg-white p-8 rounded-lg shadow-md text-center">
-            <p className="mb-4">Please log in to view your cart</p>
-            <Link 
-              to="/login" 
-              className="inline-block bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700"
-              state={{ from: '/cart' }}
-            >
-              Log In
-            </Link>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
   if (loading) {
     return (
       <Layout>
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl font-bold mb-6">Shopping Cart</h1>
           <div className="flex justify-center items-center h-64">
-            <div className="loader">Loading...</div>
+            <div className="loader"></div>
           </div>
         </div>
       </Layout>
@@ -230,6 +211,17 @@ const CartPage = () => {
     <Layout>
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">Shopping Cart ({cartTotals.itemCount} items)</h1>
+        
+        {isGuestCart && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded flex items-center justify-between">
+            <div>
+              <span className="font-semibold">Shopping as Guest:</span> Your cart will be saved on this device. 
+              <Link to="/login" className="ml-2 text-blue-700 underline">
+                Log in
+              </Link> to save your cart to your account.
+            </div>
+          </div>
+        )}
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
           <div className="p-6">
@@ -258,19 +250,23 @@ const CartPage = () => {
               </div>
             )}
             
-            <div className="flex justify-between mb-2">
-              <span>Shipping:</span>
-              <span>${cart.shipping_cost?.toFixed(2) || '0.00'}</span>
-            </div>
-            
-            <div className="flex justify-between mb-2">
-              <span>Tax:</span>
-              <span>${cart.tax?.toFixed(2) || '0.00'}</span>
-            </div>
+            {!isGuestCart && (
+              <>
+                <div className="flex justify-between mb-2">
+                  <span>Shipping:</span>
+                  <span>${cart.shipping_cost?.toFixed(2) || '0.00'}</span>
+                </div>
+                
+                <div className="flex justify-between mb-2">
+                  <span>Tax:</span>
+                  <span>${cart.tax?.toFixed(2) || '0.00'}</span>
+                </div>
+              </>
+            )}
             
             <div className="flex justify-between font-bold text-lg border-t border-gray-300 pt-2 mt-2">
               <span>Total:</span>
-              <span>${cart.total?.toFixed(2) || '0.00'}</span>
+              <span>${cartTotals.total.toFixed(2)}</span>
             </div>
             
             <form onSubmit={handleApplyPromo} className="flex mt-4">

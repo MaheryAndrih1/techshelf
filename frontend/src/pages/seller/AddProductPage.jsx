@@ -62,7 +62,6 @@ const AddProductPage = () => {
     setError('');
     setSuccess('');
 
-    // Basic validation
     if (!formData.name) {
       setError('Product name is required');
       setLoading(false);
@@ -82,7 +81,6 @@ const AddProductPage = () => {
     }
 
     try {
-      // Create FormData for file upload
       const productFormData = new FormData();
       productFormData.append('name', formData.name);
       productFormData.append('price', formData.price);
@@ -114,7 +112,7 @@ const AddProductPage = () => {
       setImage(null);
       setImagePreview('');
       
-      // Redirect to dashboard after a delay
+ 
       setTimeout(() => {
         navigate('/seller/dashboard');
       }, 1500);

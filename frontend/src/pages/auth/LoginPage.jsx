@@ -1,17 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 import Layout from '../../components/layout/Layout';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [formError, setFormError] = useState('');
-  const { login, loading, error } = useAuth();
+  const { login, loading, error, isAuthenticated } = useAuth();
+  const { mergeCartsAfterLogin } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
   
-  const from = location.state?.from?.pathname || '/';
+  const getRedirectPath = () => {
+    if (location.state?.from) {
+      return location.state.from;
+    }
+    
+    const params = new URLSearchParams(window.location.search);
+    const redirectParam = params.get('redirect');
+    if (redirectParam) {
+      return decodeURIComponent(redirectParam);
+    }
+    
+    const storedPath = sessionStorage.getItem('redirectAfterLogin');
+    if (storedPath) {
+      sessionStorage.removeItem('redirectAfterLogin');
+      return storedPath;
+    }
+    
+    return '/';
+  };
+  
+  const redirectPath = getRedirectPath();
+
+  useEffect(() => {
+    // If already authenticated, redirect to the intended destination
+    if (isAuthenticated) {
+      navigate(redirectPath, { replace: true });
+    }
+  }, [isAuthenticated, navigate, redirectPath]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,7 +58,15 @@ const LoginPage = () => {
     
     try {
       await login(email, password);
-      navigate(from, { replace: true });
+      
+      await mergeCartsAfterLogin();
+  
+      const redirectToCart = sessionStorage.getItem('redirectToCartAfterAuth');
+      if (redirectToCart) {
+        sessionStorage.removeItem('redirectToCartAfterAuth');
+        navigate('/cart');
+      } else {
+      }
     } catch (err) {
       setFormError(err.message);
     }
@@ -39,6 +76,12 @@ const LoginPage = () => {
     <Layout>
       <div className="max-w-md mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-center">Login to Your Account</h1>
+        
+        {redirectPath !== '/' && redirectPath !== '/login' && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded">
+            Please log in to continue to {redirectPath.replace(/^\//, '')}
+          </div>
+        )}
         
         {(error || formError) && (
           <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">

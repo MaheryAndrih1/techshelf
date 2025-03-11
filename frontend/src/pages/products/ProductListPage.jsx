@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +13,7 @@ const ProductListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
+  const navigate = useNavigate();
   
   const search = searchParams.get('search') || '';
   const category = searchParams.get('category') || '';
@@ -68,14 +69,16 @@ const ProductListPage = () => {
   };
   
   const handleAddToCart = async (productId) => {
-    if (!isAuthenticated) {
-      // Redirect to login
-      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-      return;
-    }
-    
     try {
+      if (!isAuthenticated) {
+        sessionStorage.setItem('redirectToCartAfterAuth', 'true');
+      }
       await addToCart(productId, 1);
+      
+      // If we're authenticated, navigate to cart right away
+      if (isAuthenticated) {
+        navigate('/cart');
+      }
     } catch (err) {
       console.error("Failed to add to cart:", err);
     }
@@ -85,7 +88,7 @@ const ProductListPage = () => {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
-          <div className="loader">Loading...</div>
+          <div className="loader"></div>
         </div>
       </Layout>
     );
@@ -213,7 +216,7 @@ const ProductListPage = () => {
                       <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
                     </Link>
                     
-                    {/* Price display - convert price to number before using toFixed */}
+                    
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-lg font-bold">${parseFloat(product.price).toFixed(2)}</span>
                       <span className="text-sm text-gray-500">

@@ -18,41 +18,45 @@ const NotificationsPage = () => {
       return;
     }
 
-    const fetchNotifications = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/notifications/');
-        // Ensure we always have an array
-        setNotifications(response.data?.results || response.data || []);
-      } catch (err) {
-        setError('Failed to load notifications');
-        console.error(err);
-        // Set empty array on error
-        setNotifications([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchNotifications();
   }, [isAuthenticated, navigate]);
 
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/notifications/');
+      console.log('Notifications data:', response.data);
+      setNotifications(response.data?.results || response.data || []);
+      setError('');
+    } catch (err) {
+      console.error('Failed to load notifications:', err);
+      setError('Failed to load notifications. Please try again.');
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const markAsRead = async (notificationId) => {
+    if (markingRead[notificationId]) return;
     setMarkingRead(prev => ({ ...prev, [notificationId]: true }));
     
     try {
-      await api.put(`/notifications/${notificationId}/mark-read/`);
-      
-      // Update local state
-      setNotifications(prevNotifications =>
-        prevNotifications.map(notification =>
+      await api.patch(`/notifications/${notificationId}/`, {
+        is_read: true
+      });
+
+      setNotifications(prev => 
+        prev.map(notification => 
           notification.notification_id === notificationId
             ? { ...notification, is_read: true }
             : notification
         )
       );
+      
+      console.log(`Successfully marked notification ${notificationId} as read`);
     } catch (err) {
-      console.error('Failed to mark notification as read:', err);
+      console.error(`Failed to mark notification ${notificationId} as read:`, err);
       setError('Failed to mark notification as read. Please try again.');
     } finally {
       setMarkingRead(prev => ({ ...prev, [notificationId]: false }));
@@ -61,18 +65,36 @@ const NotificationsPage = () => {
 
   const markAllAsRead = async () => {
     try {
-      await api.put('/notifications/mark-all-read/');
+      await api.post('/notifications/mark-all-read/');
       
-      // Update all notifications in local state as read
-      setNotifications(prevNotifications =>
-        prevNotifications.map(notification => ({
+      setNotifications(prev =>
+        prev.map(notification => ({
           ...notification,
           is_read: true
         }))
       );
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err);
-      setError('Failed to mark all notifications as read. Please try again.');
+      
+      try {
+        await Promise.all(
+          notifications
+            .filter(notification => !notification.is_read)
+            .map(notification => 
+              api.patch(`/notifications/${notification.notification_id}/`, { is_read: true })
+            )
+        );
+        
+        setNotifications(prev =>
+          prev.map(notification => ({
+            ...notification,
+            is_read: true
+          }))
+        );
+      } catch (fallbackErr) {
+        console.error('Fallback also failed:', fallbackErr);
+        setError('Failed to mark notifications as read. Please try again.');
+      }
     }
   };
 
@@ -82,7 +104,7 @@ const NotificationsPage = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Notifications</h1>
           
-          {notifications.length > 0 && (
+          {notifications.filter(n => !n.is_read).length > 0 && (
             <button 
               onClick={markAllAsRead}
               className="text-blue-600 hover:text-blue-800 text-sm"
@@ -93,14 +115,20 @@ const NotificationsPage = () => {
         </div>
         
         {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded flex justify-between items-center">
+            <span>{error}</span>
+            <button 
+              onClick={fetchNotifications}
+              className="text-sm underline"
+            >
+              Refresh
+            </button>
           </div>
         )}
         
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="loader">Loading...</div>
+            <div className="loader"></div>
           </div>
         ) : notifications.length === 0 ? (
           <div className="bg-white p-8 rounded-lg shadow-md text-center">

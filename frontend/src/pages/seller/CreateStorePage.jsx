@@ -84,8 +84,7 @@ const CreateStorePage = () => {
       return;
     }
 
-    try {
-      // Create FormData object for file upload
+    try { 
       const storeFormData = new FormData();
       storeFormData.append('store_name', formData.store_name);
       storeFormData.append('subdomain_name', formData.subdomain_name);
@@ -102,7 +101,6 @@ const CreateStorePage = () => {
         storeFormData.append('banner', banner);
       }
 
-      // Create store
       const response = await api.post('/stores/create/', storeFormData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -111,7 +109,6 @@ const CreateStorePage = () => {
 
       setSuccess('Store created successfully!');
       
-      // Redirect to store dashboard
       setTimeout(() => {
         navigate(`/seller/dashboard`);
       }, 1500);

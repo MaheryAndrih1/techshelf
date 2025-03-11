@@ -30,15 +30,20 @@ const CheckoutPage = () => {
   const [useSavedCard, setUseSavedCard] = useState(false);
   
   useEffect(() => {
+   
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: '/checkout' } });
+      // Save the current URL to redirect back after login
+      sessionStorage.setItem('redirectAfterLogin', '/checkout');
+      navigate('/login');
       return;
     }
     
     if (!loading && (!cart || !cart.items || cart.items.length === 0)) {
       navigate('/cart');
+      return;
     }
     
+    // Pre-fill shipping info if available
     if (currentUser) {
       if (currentUser.shipping_address) {
         setShippingInfo({
@@ -47,6 +52,10 @@ const CheckoutPage = () => {
           country: currentUser.country || '',
           postal_code: currentUser.postal_code || '',
         });
+      }
+      
+      if (currentUser.has_payment_method) {
+        setUseSavedCard(true);
       }
     }
   }, [isAuthenticated, loading, cart, navigate, currentUser]);
@@ -117,7 +126,7 @@ const CheckoutPage = () => {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl font-bold mb-6">Checkout</h1>
           <div className="flex justify-center items-center h-64">
-            <div className="loader">Loading...</div>
+            <div className="loader"></div>
           </div>
         </div>
       </Layout>
@@ -257,7 +266,7 @@ const CheckoutPage = () => {
               
               <h2 className="text-lg font-semibold mb-4 border-t pt-4">Payment Information</h2>
               
-              {currentUser?.has_billing_info && (
+              {currentUser?.has_payment_method && (
                 <div className="mb-4">
                   <label className="flex items-center">
                     <input
@@ -266,7 +275,7 @@ const CheckoutPage = () => {
                       onChange={(e) => setUseSavedCard(e.target.checked)}
                       className="mr-2"
                     />
-                    <span>Use saved card ending in {currentUser?.billing_info?.last4 || '****'}</span>
+                    <span>Use saved card ending in {currentUser?.payment_info?.last4 || '****'}</span>
                   </label>
                 </div>
               )}
@@ -284,6 +293,7 @@ const CheckoutPage = () => {
                       value={paymentInfo.name_on_card}
                       onChange={handlePaymentChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required={!useSavedCard}
                     />
                   </div>
                   
@@ -299,6 +309,7 @@ const CheckoutPage = () => {
                       onChange={handlePaymentChange}
                       placeholder="**** **** **** ****"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required={!useSavedCard}
                     />
                   </div>
                   
@@ -315,6 +326,7 @@ const CheckoutPage = () => {
                         onChange={handlePaymentChange}
                         placeholder="MM/YY"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        required={!useSavedCard}
                       />
                     </div>
                     
@@ -330,6 +342,7 @@ const CheckoutPage = () => {
                         onChange={handlePaymentChange}
                         placeholder="***"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        required={!useSavedCard}
                       />
                     </div>
                   </div>
