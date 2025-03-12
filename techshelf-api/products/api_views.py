@@ -2,10 +2,14 @@ from rest_framework import generics, permissions, status, filters
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from .models import Product, Like
+from .models import Product, Like, ProductLike
 from .serializers import ProductSerializer, ProductCreateSerializer, LikeSerializer
 from django.db.models import Q
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from stores.models import Store
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ProductListView(generics.ListAPIView):
     """List all products with filtering and sorting"""
@@ -90,25 +94,37 @@ class ProductUpdateView(generics.UpdateAPIView):
         return Product.objects.filter(store__user=self.request.user)
 
 class ProductLikeView(APIView):
-    """Toggle like status for a product"""
+    """Like or unlike a product"""
     permission_classes = [permissions.IsAuthenticated]
     
     def post(self, request, product_id):
+        """Like a product"""
         product = get_object_or_404(Product, product_id=product_id)
         
+        # Check if already liked
+        like, created = ProductLike.objects.get_or_create(
+            user=request.user,
+            product=product
+        )
+        
+        return Response({'liked': True}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+    
+    def delete(self, request, product_id):
+        """Unlike a product"""
         try:
-            like = Like.objects.get(user=request.user, product=product)
+            like = ProductLike.objects.get(user=request.user, product__product_id=product_id)
             like.delete()
             return Response({'liked': False}, status=status.HTTP_200_OK)
-        except Like.DoesNotExist:
-            # Create new like
-            like = Like(
-                user=request.user,
-                product=product,
-                like_id=f"like_{request.user.id}_{product.product_id}"
-            )
-            like.save()
-            return Response({'liked': True}, status=status.HTTP_201_CREATED)
+        except ProductLike.DoesNotExist:
+            return Response({'error': 'Not liked'}, status=status.HTTP_404_NOT_FOUND)
+
+class UserLikedProductsView(generics.ListAPIView):
+    """Get all products liked by the authenticated user"""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ProductSerializer
+    
+    def get_queryset(self):
+        return Product.objects.filter(likes__user=self.request.user)
 
 class CategoryProductsView(generics.ListAPIView):
     """List all products in a specific category"""

@@ -59,3 +59,17 @@ class Like(models.Model):
     
     def __str__(self):
         return f"{self.user.username} liked {self.product.name}"
+
+class ProductLike(models.Model):
+    like_id = models.CharField(max_length=100, primary_key=True, editable=False)
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='product_likes')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='likes')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('user', 'product')
+        
+    def save(self, *args, **kwargs):
+        if not self.like_id:
+            self.like_id = f"like_{self.product.product_id}_{self.user.id}"
+        super().save(*args, **kwargs)

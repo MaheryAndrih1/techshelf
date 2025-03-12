@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
@@ -12,47 +12,45 @@ const ProductDetailPage = () => {
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [liked, setLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
   const { isAuthenticated, currentUser } = useAuth();
   const { addToCart, loading: cartLoading } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const fetchProduct = async () => {
+      setLoading(true);
       try {
         const response = await api.get(`/products/${productId}/`);
         setProduct(response.data);
         
-        if (isAuthenticated && currentUser) {
-          try {
-            setLiked(response.data.likes && response.data.likes.includes(currentUser.userId));
-          } catch (err) {
-            console.error("Error checking like status", err);
-          }
+        // Check if product is already liked by current user
+        if (isAuthenticated && response.data.is_liked !== undefined) {
+          setLiked(response.data.is_liked);
         }
+
       } catch (err) {
-        setError("Failed to load product details");
-        console.error(err);
+        console.error("Error fetching product:", err);
+        setError('Failed to load product details');
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchProduct();
   }, [productId, isAuthenticated, currentUser]);
 
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value);
-    setQuantity(Math.max(1, Math.min(value, product?.stock || 1)));
+    if (!isNaN(value) && value > 0) {
+      setQuantity(Math.min(value, product?.stock || 1));
+    }
   };
 
   const handleAddToCart = async () => {
     try {
-      if (!isAuthenticated) {
-        // Set flag to redirect to cart after login/register
-        sessionStorage.setItem('redirectToCartAfterAuth', 'true');
-      }
       await addToCart(productId, quantity);
-      
     } catch (err) {
       console.error("Failed to add to cart:", err);
     }
@@ -60,20 +58,33 @@ const ProductDetailPage = () => {
 
   const handleLikeProduct = async () => {
     if (!isAuthenticated) {
-      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      // Store current path for redirection after login
+      sessionStorage.setItem('redirectAfterAuth', location.pathname);
+      navigate('/login');
       return;
     }
     
     try {
-      await api.post(`/products/${productId}/like/`);
-      setLiked(!liked);
+      setLikeLoading(true);
       
-      setProduct(prev => ({
-        ...prev,
-        likes_count: liked ? (prev.likes_count - 1) : (prev.likes_count + 1)
-      }));
+      if (liked) {
+        // Unlike the product
+        await api.delete(`/products/${productId}/like/`);
+        setLiked(false);
+      } else {
+        // Like the product
+        await api.post(`/products/${productId}/like/`);
+        setLiked(true);
+      }
+      
+      // Update product data to reflect new like count
+      const updatedProduct = await api.get(`/products/${productId}/`);
+      setProduct(updatedProduct.data);
+      
     } catch (err) {
-      console.error("Failed to like product:", err);
+      console.error("Error updating like status:", err);
+    } finally {
+      setLikeLoading(false);
     }
   };
 
@@ -90,8 +101,13 @@ const ProductDetailPage = () => {
   if (error || !product) {
     return (
       <Layout>
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error || "Product not found"}
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error || "Product not found"}
+          </div>
+          <Link to="/products" className="text-blue-600 hover:underline">
+            &larr; Back to Products
+          </Link>
         </div>
       </Layout>
     );
@@ -99,109 +115,137 @@ const ProductDetailPage = () => {
 
   return (
     <Layout>
-      <div className="flex flex-col md:flex-row bg-white rounded-lg shadow-lg overflow-hidden">
-        {/* Product Image */}
-        <div className="md:w-1/2">
-          {product.image ? (
-            <img 
-              src={product.image} 
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full min-h-[300px] bg-gray-200 flex items-center justify-center text-gray-500">
-              No Image Available
-            </div>
-          )}
-        </div>
-        
-        {/* Product Details */}
-        <div className="md:w-1/2 p-6">
-          <div className="flex justify-between items-start">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{product.name}</h1>
-            <button
-              onClick={handleLikeProduct}
-              className={`flex items-center ${liked ? 'text-red-500' : 'text-gray-500'} hover:text-red-500`}
-              disabled={!isAuthenticated}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill={liked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              <span className="ml-1">{product.likes_count || 0}</span>
-            </button>
-          </div>
-          
-          <div className="flex items-center mb-4">
-            <Link 
-              to={`/stores/${product.store?.subdomain_name}`} 
-              className="text-blue-600 hover:underline"
-            >
-              {product.store?.store_name}
-            </Link>
-          </div>
-          
-          <div className="text-3xl font-bold text-gray-900 mb-4">
-            ${parseFloat(product.price).toFixed(2)}
-          </div>
-          
-          <div className="mb-4">
-            <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${product.stock > 10 ? 'bg-green-100 text-green-800' : product.stock > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-              {product.stock > 10 
-                ? 'In Stock' 
-                : product.stock > 0 
-                  ? `Only ${product.stock} left` 
-                  : 'Out of Stock'
-              }
-            </span>
-            
-            <span className="inline-block ml-2 px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded">
-              {product.category}
-            </span>
-          </div>
-          
-          <p className="text-gray-700 mb-6">
-            {product.description}
-          </p>
-          
-          {product.stock > 0 && (
-            <div className="flex items-center mb-6">
-              <div className="mr-4">
-                <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
-                  Quantity
-                </label>
-                <input
-                  type="number"
-                  id="quantity"
-                  min="1"
-                  max={product.stock}
-                  value={quantity}
-                  onChange={handleQuantityChange}
-                  className="w-20 border border-gray-300 rounded px-3 py-2"
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row">
+          {/* Product Image */}
+          <div className="md:w-1/2 p-4">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              {product?.image ? (
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-auto object-cover"
                 />
+              ) : (
+                <div className="w-full h-64 flex items-center justify-center bg-gray-200 text-gray-500">
+                  No Image Available
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Product Details */}
+          <div className="md:w-1/2 p-4">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex justify-between items-start">
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">{product?.name}</h1>
+                <button 
+                  onClick={handleLikeProduct}
+                  disabled={likeLoading}
+                  className={`text-gray-400 hover:text-red-500 focus:outline-none transition-colors ${liked ? 'text-red-500' : ''}`}
+                  aria-label={liked ? "Unlike product" : "Like product"}
+                >
+                  {liked ? (
+                    <svg className="h-8 w-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg className="h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                  )}
+                </button>
               </div>
               
-              <button
-                onClick={handleAddToCart}
-                disabled={cartLoading}
-                className="flex-grow bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
-              >
-                {cartLoading ? 'Adding...' : 'Add to Cart'}
-              </button>
+              {product?.like_count !== undefined && (
+                <div className="text-sm text-gray-500 -mt-1 mb-3">
+                  {product.like_count} {product.like_count === 1 ? 'person' : 'people'} liked this product
+                </div>
+              )}
+              
+              <div className="flex items-center mb-4">
+                <span className="text-3xl font-bold text-gray-900">${parseFloat(product?.price).toFixed(2)}</span>
+                {product?.stock > 0 ? (
+                  <span className="ml-3 inline-block bg-green-100 text-green-800 text-sm px-2 py-1 rounded-full">
+                    In Stock ({product.stock})
+                  </span>
+                ) : (
+                  <span className="ml-3 inline-block bg-red-100 text-red-800 text-sm px-2 py-1 rounded-full">
+                    Out of Stock
+                  </span>
+                )}
+              </div>
+              
+              {product.store && (
+                <div className="mb-4">
+                  <p className="text-gray-600">
+                    Sold by: <Link to={`/stores/${product.store}`} className="text-blue-600 hover:underline">{product.store_name}</Link>
+                  </p>
+                </div>
+              )}
+              
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold mb-2">Description</h2>
+                <p className="text-gray-700">{product.description || 'No description available.'}</p>
+              </div>
+              
+              {product.stock > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center mb-4">
+                    <label htmlFor="quantity" className="block mr-4 font-medium">
+                      Quantity:
+                    </label>
+                    <div className="flex border border-gray-300 rounded">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="px-3 py-1 bg-gray-100 border-r border-gray-300"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        id="quantity"
+                        value={quantity}
+                        onChange={handleQuantityChange}
+                        min="1"
+                        max={product.stock}
+                        className="w-16 text-center"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                        className="px-3 py-1 bg-gray-100 border-l border-gray-300"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={cartLoading}
+                    className="w-full py-3 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300 flex items-center justify-center"
+                  >
+                    {cartLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-t-transparent border-2 border-white rounded-full animate-spin mr-2"></div>
+                        Adding to Cart...
+                      </>
+                    ) : (
+                      'Add to Cart'
+                    )}
+                  </button>
+                </div>
+              )}
+              
+              <div className="text-sm text-gray-500">
+                Category: {product.category}
+              </div>
             </div>
-          )}
-          
-          <div className="border-t border-gray-200 pt-4">
-            <h3 className="text-lg font-medium mb-2">Product Details</h3>
-            <ul className="list-disc list-inside text-gray-600 space-y-1">
-              <li>Product ID: {product.product_id}</li>
-              {product.specifications && Object.entries(product.specifications).map(([key, value]) => (
-                <li key={key}>{key}: {value}</li>
-              ))}
-            </ul>
           </div>
         </div>
       </div>
-
     </Layout>
   );
 };
