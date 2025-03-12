@@ -75,10 +75,6 @@ const ProductListPage = () => {
       }
       await addToCart(productId, 1);
       
-      // If we're authenticated, navigate to cart right away
-      if (isAuthenticated) {
-        navigate('/cart');
-      }
     } catch (err) {
       console.error("Failed to add to cart:", err);
     }

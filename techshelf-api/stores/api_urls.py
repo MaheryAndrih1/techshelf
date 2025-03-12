@@ -6,10 +6,10 @@ from .api_views import (
 
 urlpatterns = [
     path('', StoreListView.as_view(), name='api_store_list'),
-    path('create/', StoreCreateView.as_view(), name='api_store_create'),  # Now using APIView
-    path('<slug:subdomain>/', StoreDetailView.as_view(), name='api_store_detail'),
-    path('<slug:subdomain>/update/', StoreUpdateView.as_view(), name='api_store_update'),
-    path('<slug:subdomain>/theme/', StoreThemeView.as_view(), name='api_store_theme'),
-    path('<slug:subdomain>/ratings/', StoreRatingListView.as_view(), name='api_store_ratings'),
-    path('<slug:subdomain>/rate/', StoreRatingCreateView.as_view(), name='api_store_rate'),
+    path('create/', StoreCreateView.as_view(), name='api_store_create'),
+    path('<str:subdomain>/', StoreDetailView.as_view(), name='api_store_detail'),
+    path('<str:subdomain>/update/', StoreUpdateView.as_view(), name='api_store_update'),
+    path('<str:subdomain>/theme/', StoreThemeView.as_view(), name='api_store_theme'),
+    path('<str:subdomain>/ratings/', StoreRatingListView.as_view(), name='api_store_ratings'),
+    path('<str:subdomain>/rate/', StoreRatingCreateView.as_view(), name='api_store_rate'),
 ]

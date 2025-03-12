@@ -12,6 +12,8 @@ export const CartProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { isAuthenticated, currentUser } = useAuth();
+  const [animateCart, setAnimateCart] = useState(false);
+  const [cartCount, setCartCount] = useState(0);  
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -43,7 +45,7 @@ export const CartProvider = ({ children }) => {
     return { items: [], total: 0, subtotal: 0 };
   };
 
-  // Merge guest cart with user cart after login
+  // Merge guest cart with user cart after login and register
   const mergeCartsAfterLogin = async () => {
     const guestCart = loadGuestCart();
     console.log("Guest cart to merge:", guestCart);
@@ -124,6 +126,9 @@ export const CartProvider = ({ children }) => {
       
       cartData.items = updatedItems;
       setCart(cartData);
+      
+      // Update cart count
+      setCartCount(cartData.items.length);
     } catch (err) {
       setError('Failed to fetch cart');
       console.error('Cart fetch error:', err);
@@ -133,7 +138,6 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // Add product to cart (works for both guest and logged-in users)
   const addToCart = async (productId, quantity = 1) => {
     setLoading(true);
     setError(null);
@@ -145,6 +149,9 @@ export const CartProvider = ({ children }) => {
           product_id: productId,
           quantity,
         });
+        
+        // Trigger animation FIRST before any async operations
+        triggerAnimation();
         
         await fetchCart();
         return response.data;
@@ -182,8 +189,13 @@ export const CartProvider = ({ children }) => {
         guestCart.subtotal = subtotal;
         guestCart.total = subtotal; 
         
+        // Trigger animation FIRST
+        triggerAnimation();
+        
         const updatedCart = saveGuestCart(guestCart);
         setCart(updatedCart);
+        setCartCount(updatedCart.items.length);
+        
         return updatedCart;
       }
     } catch (err) {
@@ -193,6 +205,14 @@ export const CartProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // New helper function to trigger animation consistently
+  const triggerAnimation = () => {
+    setAnimateCart(true);
+    setTimeout(() => {
+      setAnimateCart(false);
+    }, 700);
   };
 
   const removeFromCart = async (productId) => {
@@ -423,6 +443,7 @@ export const CartProvider = ({ children }) => {
 
   const value = {
     cart,
+    cartItems: cart?.items || [],  // Make sure cartItems is always available
     loading,
     error,
     addToCart,
@@ -434,8 +455,9 @@ export const CartProvider = ({ children }) => {
     mergeCartsAfterLogin,
     clearGuestCart,
     isGuestCart: !isAuthenticated && cart?.items?.length > 0,
-    itemCount: cart?.items?.length || 0,
+    itemCount: cartCount,
     cartTotal: cart?.total || 0,
+    animateCart
   };
 
   return (

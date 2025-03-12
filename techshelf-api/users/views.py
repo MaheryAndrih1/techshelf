@@ -11,6 +11,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from .serializers import UserSerializer, UserRegisterSerializer, BillingInfoSerializer
+from stores.models import Store
+from stores.serializers import StoreSerializer
 
 User = get_user_model()
 
@@ -112,7 +114,6 @@ class LoginView(APIView):
                 'user': UserSerializer(user).data
             })
         
-        # Add more detailed error message
         return Response({'error': 'Invalid credentials. Please check your email and password.'}, 
                        status=status.HTTP_401_UNAUTHORIZED)
 
@@ -155,3 +156,18 @@ class UpgradeToSellerView(APIView):
         user.save()
         
         return Response({'message': 'Account upgraded to seller successfully'}, status=status.HTTP_200_OK)
+
+class UserStoreView(APIView):
+    """Get the store associated with the current user"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        try:
+            store = Store.objects.get(user=request.user)
+            serializer = StoreSerializer(store)
+            return Response(serializer.data)
+        except Store.DoesNotExist:
+            return Response(
+                {'error': 'You do not have a store yet'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )

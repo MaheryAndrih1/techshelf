@@ -6,10 +6,10 @@ from .models import Notification, SalesReport
 from .serializers import NotificationSerializer, SalesReportSerializer
 from django.utils import timezone
 from datetime import datetime, timedelta
+from django.db.models import Q
 import logging
 import traceback
 
-# Configure logger
 logger = logging.getLogger(__name__)
 
 class NotificationListView(generics.ListAPIView):
@@ -18,19 +18,47 @@ class NotificationListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        return Notification.objects.filter(user=self.request.user).order_by('-created_at')
+        queryset = Notification.objects.filter(user=self.request.user).order_by('-created_at')
+        
+        store_id = self.request.query_params.get('store_id')
+        if store_id and hasattr(self.request.user, 'store') and self.request.user.store.store_id == store_id:
+            store_notifications = queryset.filter(
+                Q(message__icontains=store_id) | 
+                Q(message__icontains=self.request.user.store.store_name)
+            )
+            return store_notifications
+        
+        return queryset
 
-class MarkNotificationReadView(generics.UpdateAPIView):
-    """Mark a notification as read"""
-    serializer_class = NotificationSerializer
+class MarkNotificationReadView(APIView):
+    """Mark a notification as read - supports both POST and PUT/PATCH methods"""
     permission_classes = [permissions.IsAuthenticated]
-    lookup_field = 'notification_id'
     
-    def get_queryset(self):
-        return Notification.objects.filter(user=self.request.user)
+    def get_object(self, notification_id):
+        return get_object_or_404(Notification, 
+                                notification_id=notification_id,
+                                user=self.request.user)
     
-    def perform_update(self, serializer):
-        serializer.save(is_read=True)
+    def post(self, request, notification_id):
+        notification = self.get_object(notification_id)
+        notification.is_read = True
+        notification.save()
+        serializer = NotificationSerializer(notification)
+        return Response(serializer.data)
+    
+    def put(self, request, notification_id):
+        notification = self.get_object(notification_id)
+        notification.is_read = True
+        notification.save()
+        serializer = NotificationSerializer(notification)
+        return Response(serializer.data)
+    
+    def patch(self, request, notification_id):
+        notification = self.get_object(notification_id)
+        notification.is_read = True
+        notification.save()
+        serializer = NotificationSerializer(notification)
+        return Response(serializer.data)
 
 class SalesReportListView(generics.ListAPIView):
     """List all sales reports for the authenticated seller's store"""
@@ -38,7 +66,6 @@ class SalesReportListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        # Check if user is a seller and has a store
         if self.request.user.role != 'SELLER' or not hasattr(self.request.user, 'store'):
             return SalesReport.objects.none()
         
@@ -50,49 +77,39 @@ class GenerateReportView(APIView):
     
     def post(self, request):
         try:
-            # Debug info
             logger.debug(f"Report generation request received: {request.data}")
             
-            # Check if user is a seller
             if request.user.role != 'SELLER':
                 return Response({'error': 'Only sellers can generate sales reports'}, status=status.HTTP_403_FORBIDDEN)
             
-            # Check if user has a store
             if not hasattr(request.user, 'store'):
                 return Response({'error': 'You need to create a store first'}, status=status.HTTP_400_BAD_REQUEST)
             
-            # Get date parameters with defaults
             try:
                 start_date = request.data.get('start_date')
                 end_date = request.data.get('end_date')
                 
                 if not start_date:
-                    # Default to 30 days ago
                     start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
                 
                 if not end_date:
-                    # Default to today
                     end_date = datetime.now().strftime('%Y-%m-%d')
                 
-                # Parse dates
                 start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
                 end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
             except ValueError as e:
                 logger.error(f"Date format error: {e}")
                 return Response({'error': f'Invalid date format: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
             
-            # Create a simplified report for testing purposes
             try:
-                # For testing, create a basic report even if there's no data
                 report = SalesReport.objects.create(
                     report_id=f"report_{request.user.store.store_id}_{int(datetime.now().timestamp())}",
                     store=request.user.store,
-                    total_sales=0.0,  # Default to 0 for empty/test report
+                    total_sales=0.0,
                     start_date=start_date_obj,
                     end_date=end_date_obj
                 )
                 
-                # Return serialized report
                 serializer = SalesReportSerializer(report)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
                 
@@ -113,9 +130,7 @@ class SalesReportDetailView(generics.RetrieveAPIView):
     lookup_field = 'report_id'
     
     def get_queryset(self):
-        # Check if user is a seller and has a store
         if self.request.user.role != 'SELLER' or not hasattr(self.request.user, 'store'):
             return SalesReport.objects.none()
         
-        # Only allow access to reports for the user's own store
         return SalesReport.objects.filter(store=self.request.user.store)

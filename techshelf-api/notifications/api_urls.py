@@ -6,7 +6,7 @@ from .api_views import (
 
 urlpatterns = [
     path('', NotificationListView.as_view(), name='api_notification_list'),
-    path('<str:notification_id>/mark-read/', MarkNotificationReadView.as_view(), name='api_mark_notification_read'),
+    path('<str:notification_id>/read/', MarkNotificationReadView.as_view(), name='api_notification_mark_read'),
     path('reports/', SalesReportListView.as_view(), name='api_sales_report_list'),
     path('reports/generate/', GenerateReportView.as_view(), name='api_generate_report'),
     path('reports/<str:report_id>/', SalesReportDetailView.as_view(), name='api_sales_report_detail'),

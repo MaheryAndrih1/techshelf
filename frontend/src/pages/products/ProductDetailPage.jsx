@@ -53,9 +53,6 @@ const ProductDetailPage = () => {
       }
       await addToCart(productId, quantity);
       
-      if (isAuthenticated) {
-        navigate('/cart');
-      }
     } catch (err) {
       console.error("Failed to add to cart:", err);
     }
@@ -204,17 +201,7 @@ const ProductDetailPage = () => {
           </div>
         </div>
       </div>
-      
-      {/* Related Products (placeholder for future implementation) */}
-      <div className="mt-12">
-        <h2 className="text-xl font-bold mb-4">You might also like</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Related products would go here */}
-          <div className="bg-gray-100 p-4 rounded text-center text-gray-500">
-            Related products coming soon
-          </div>
-        </div>
-      </div>
+
     </Layout>
   );
 };

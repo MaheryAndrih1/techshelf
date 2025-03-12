@@ -22,6 +22,7 @@ import SellerDashboard from './pages/seller/SellerDashboard';
 import AddProductPage from './pages/seller/AddProductPage';
 import SellerOrderDetailPage from './pages/seller/SellerOrderDetailPage';
 import SellerOrdersPage from './pages/seller/SellerOrdersPage';
+import EditProductPage from './pages/seller/EditProductPage';
 
 // Auth route wrapper
 const ProtectedRoute = ({ element, requiresSeller = false }) => {
@@ -82,6 +83,10 @@ const AppRoutes = () => {
       <Route 
         path="/seller/add-product" 
         element={<ProtectedRoute element={<AddProductPage />} requiresSeller={true} />} 
+      />
+      <Route 
+        path="/seller/edit-product/:productId" 
+        element={<ProtectedRoute element={<EditProductPage />} requiresSeller={true} />} 
       />
       <Route 
         path="/seller/orders" 

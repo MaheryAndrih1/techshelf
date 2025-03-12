@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
-import api from '../../utils/api';
+import api, { getMediaUrl } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 
@@ -20,6 +20,9 @@ const StoreDetailPage = () => {
   const [reviewsPage, setReviewsPage] = useState(1);
   const [hasMoreReviews, setHasMoreReviews] = useState(false);
   const reviewsPerPage = 2;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     const fetchStoreData = async () => {
@@ -81,39 +84,56 @@ const StoreDetailPage = () => {
     }
     
     try {
+      // Set loading state for button
+      setIsSubmitting(true);
 
       const ratingData = {
         score: userRating.score,
-        comment: userRating.comment,
-        user_name: currentUser.username 
+        comment: userRating.comment
       };
       
+      console.log(`Submitting rating for store ${subdomain}:`, ratingData);
 
+      // Make API request to create/update rating
       const response = await api.post(`/stores/${subdomain}/rate/`, ratingData);
       console.log("Review submission response:", response.data);
       
-      
-      const newRating = {
-        rating_id: response.data?.rating_id || `temp-${Date.now()}`,
+      // Use the response data directly if available, otherwise create a placeholder
+      const newRating = response.data || {
+        rating_id: `temp-${Date.now()}`,
         score: userRating.score,
         comment: userRating.comment,
         timestamp: new Date().toISOString(),
         user: currentUser.username, 
-        user_name: currentUser.username,
-        user_id: currentUser.id
+        user_name: currentUser.username
       };
       
-      const updatedRatings = [newRating, ...ratings];
+      // Add user information to the rating if not included in response
+      if (!newRating.user_name) {
+        newRating.user_name = currentUser.username;
+      }
+      
+      const updatedRatings = [newRating, ...ratings.filter(r => 
+        r.user !== currentUser.username && r.user_id !== currentUser.id
+      )];
       setRatings(updatedRatings);
-      setDisplayedReviews([newRating, ...displayedReviews]);
       
-
+      setDisplayedReviews([newRating, ...displayedReviews.filter(r => 
+        r.user !== currentUser.username && r.user_id !== currentUser.id
+      )]);
+      
+      setSubmitSuccess('Your review was submitted successfully!');
+      setTimeout(() => setSubmitSuccess(''), 3000);
+      
+      // Reset the form
       setUserRating({ score: 5, comment: '' });
-      
-      
     } catch (err) {
       console.error('Failed to submit rating:', err);
-      alert('Failed to submit your review. Please try again.');
+      const errorMsg = err.response?.data?.detail || err.response?.data?.error || 'Failed to submit your review.';
+      setSubmitError(errorMsg);
+      setTimeout(() => setSubmitError(''), 5000);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -133,10 +153,6 @@ const StoreDetailPage = () => {
       }
       await addToCart(productId, 1);
       
-
-      if (isAuthenticated) {
-        navigate('/cart');
-      }
     } catch (err) {
       console.error('Failed to add to cart:', err);
     }
@@ -173,7 +189,7 @@ const StoreDetailPage = () => {
       <div className="h-48 md:h-64 bg-blue-100 mb-6 overflow-hidden">
         {store.theme?.banner_url ? (
           <img 
-            src={store.theme.banner_url}
+            src={getMediaUrl(store.theme.banner_url)}
             alt={`${store.store_name} banner`}
             className="w-full h-full object-cover"
           />
@@ -190,7 +206,7 @@ const StoreDetailPage = () => {
           <div className="w-24 h-24 bg-gray-200 rounded-full overflow-hidden mb-4 md:mb-0 md:mr-6">
             {store.theme?.logo_url ? (
               <img
-                src={store.theme.logo_url}
+                src={getMediaUrl(store.theme.logo_url)}
                 alt={`${store.store_name} logo`}
                 className="w-full h-full object-cover"
               />
@@ -287,6 +303,19 @@ const StoreDetailPage = () => {
             {isAuthenticated && store.user_id !== currentUser?.id && (
               <div className="mb-8 border-b pb-8">
                 <h3 className="text-lg font-semibold mb-4">Write a Review</h3>
+                
+                {submitSuccess && (
+                  <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+                    {submitSuccess}
+                  </div>
+                )}
+                
+                {submitError && (
+                  <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {submitError}
+                  </div>
+                )}
+                
                 <form onSubmit={handleRatingSubmit}>
                   <div className="mb-4">
                     <label htmlFor="rating" className="block mb-2 text-sm font-medium text-gray-700">
@@ -330,9 +359,15 @@ const StoreDetailPage = () => {
                   </div>
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+                    disabled={isSubmitting}
+                    className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300 flex items-center"
                   >
-                    Submit Review
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-t-transparent border-2 border-white rounded-full animate-spin mr-2"></div>
+                        Submitting...
+                      </>
+                    ) : 'Submit Review'}
                   </button>
                 </form>
               </div>

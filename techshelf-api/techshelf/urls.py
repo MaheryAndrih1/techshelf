@@ -1,7 +1,3 @@
-"""
-URL configuration for techshelf project.
-"""
-
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -14,8 +10,6 @@ urlpatterns = [
     # API endpoints
     path('api/health/', health_check, name='api_health_check'),
     path('api/debug/', api_debug_view, name='api_debug'),
-    
-    # App-specific API endpoints
     path('api/users/', include('users.api_urls')),
     path('api/stores/', include('stores.api_urls')),
     path('api/products/', include('products.api_urls')),

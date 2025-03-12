@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 const HomePage = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -9,6 +10,7 @@ const HomePage = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { isAuthenticated, isSeller } = useAuth(); 
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -63,12 +65,14 @@ const HomePage = () => {
             >
               Browse Products
             </Link>
-            <Link
-              to="/become-seller"
-              className="px-6 py-3 bg-transparent border-2 border-white rounded-lg font-medium hover:bg-white hover:text-blue-600 transition duration-300"
-            >
-              Become a Seller
-            </Link>
+            {isAuthenticated && !isSeller && (
+              <Link
+                to="/become-seller"
+                className="px-6 py-3 bg-transparent border-2 border-white rounded-lg font-medium hover:bg-white hover:text-blue-600 transition duration-300"
+              >
+                Become a Seller
+              </Link>
+            )}
           </div>
         </div>
       </div>

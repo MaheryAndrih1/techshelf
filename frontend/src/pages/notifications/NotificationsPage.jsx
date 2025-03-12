@@ -63,38 +63,11 @@ const NotificationsPage = () => {
     }
   };
 
-  const markAllAsRead = async () => {
-    try {
-      // Simple POST request to mark all notifications as read
-      await api.post('/notifications/mark-all-read/');
-      
-      // Update all notifications in state to be marked as read
-      setNotifications(prev =>
-        prev.map(notification => ({
-          ...notification,
-          is_read: true
-        }))
-      );
-    } catch (err) {
-      console.error('Failed to mark all notifications as read:', err);
-      setError('Failed to mark all notifications as read. Please try again.');
-    }
-  };
-
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Notifications</h1>
-          
-          {notifications.filter(n => !n.is_read).length > 0 && (
-            <button 
-              onClick={markAllAsRead}
-              className="text-blue-600 hover:text-blue-800 text-sm"
-            >
-              Mark all as read
-            </button>
-          )}
         </div>
         
         {error && (

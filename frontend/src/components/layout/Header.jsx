@@ -44,7 +44,7 @@ const Header = () => {
             </Link>
           </div>
 
-          {/* Search Bar - Hide on mobile */}
+          {/* Search Bar */}
           <div className="hidden md:block flex-grow max-w-lg mx-8">
             <form onSubmit={handleSearch} className="flex">
               <input
@@ -143,7 +143,7 @@ const Header = () => {
               <input
                 type="text"
                 placeholder="Search products..."
-                className="w-full px-4 py-1 rounded-l text-gray-800"
+                className="w-full px-4 py-1 rounded-l text-gray-800 bg-white"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />

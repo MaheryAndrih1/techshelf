@@ -61,28 +61,39 @@ class StoreCreateView(APIView):
                 subdomain_name=subdomain_name if subdomain_name else None,
                 user=user
             )
-            store.save()  # This will trigger the save method in the model which creates the store_id and subdomain if necessary
+            store.save() 
+
+            primary_color = request.data.get('primary_color', '#3498db')
+            secondary_color = request.data.get('secondary_color', '#2ecc71')
+            font = request.data.get('font', 'Roboto')
             
-            # Create theme manually and link it to the store
+            # Create theme manually
             theme = StoreTheme(
                 theme_id=f"theme_{store.store_id}",
-                primary_color='#3498db',
-                secondary_color='#2ecc71',
-                font='Roboto'
+                primary_color=primary_color,
+                secondary_color=secondary_color,
+                font=font
             )
+            
+            if 'logo_url' in request.FILES:
+                theme.logo_url = request.FILES['logo_url']
+                print(f"Logo image received: {theme.logo_url}")
+            
+            if 'banner_url' in request.FILES:
+                theme.banner_url = request.FILES['banner_url']
+                print(f"Banner image received: {theme.banner_url}")
+                
             theme.save()
             
-            # Link theme to store
             store.theme = theme
             store.save()
-            
-            # Return serialized store
+
             serializer = StoreSerializer(store)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
             
         except Exception as e:
             logger.error(f"Store creation failed: {str(e)}")
-            logger.error(traceback.format_exc())  # Log full traceback for debugging
+            logger.error(traceback.format_exc()) 
             
             return Response(
                 {'error': f'Failed to create store: {str(e)}'},
@@ -134,31 +145,40 @@ class StoreRatingListView(generics.ListAPIView):
         store = get_object_or_404(Store, subdomain_name=self.kwargs['subdomain'])
         return Rating.objects.filter(store=store).order_by('-timestamp')
 
-class StoreRatingCreateView(generics.CreateAPIView):
+class StoreRatingCreateView(APIView):
     """Create a rating for a store"""
-    serializer_class = RatingSerializer
     permission_classes = [permissions.IsAuthenticated]
     
-    def perform_create(self, serializer):
-        store = get_object_or_404(Store, subdomain_name=self.kwargs['subdomain'])
+    def post(self, request, subdomain):
+        store = get_object_or_404(Store, subdomain_name=subdomain)
         
-        # Check if user is not the store owner
-        if store.user == self.request.user:
+        if store.user == request.user:
             return Response(
                 {'detail': 'You cannot rate your own store.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        serializer = RatingSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
         # Check if the user already rated this store
-        existing_rating = Rating.objects.filter(user=self.request.user, store=store).first()
+        existing_rating = Rating.objects.filter(user=request.user, store=store).first()
+        
         if existing_rating:
+            # Update existing rating
             existing_rating.score = serializer.validated_data['score']
             existing_rating.comment = serializer.validated_data.get('comment', '')
             existing_rating.save()
-            return existing_rating
+            
+            # Return updated rating data
+            return Response(RatingSerializer(existing_rating).data, status=status.HTTP_200_OK)
         else:
-            return serializer.save(
-                user=self.request.user,
+            # Create new rating
+            rating = serializer.save(
+                user=request.user,
                 store=store,
-                rating_id=f"rating_{self.request.user.id}_{store.store_id}"
+                rating_id=f"rating_{request.user.id}_{store.store_id}"
             )
+            
+            return Response(RatingSerializer(rating).data, status=status.HTTP_201_CREATED)

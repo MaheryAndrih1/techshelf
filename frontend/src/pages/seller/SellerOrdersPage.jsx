@@ -30,57 +30,33 @@ const SellerOrdersPage = () => {
     setLoading(true);
     try {
       console.log('Attempting to fetch seller orders...');
-      let orderData = [];
-      let success = false;
       
-      // Try different possible endpoints
-      const possibleOrderEndpoints = [
-        '/orders/seller-orders/',
-        '/orders/seller/',
-        '/orders/?role=seller', 
-        '/orders/my-store-orders/',
-        '/orders/'
-      ];
+      const endpoint = statusFilter !== 'ALL' 
+        ? `/orders/seller-orders/?status=${statusFilter}`
+        : '/orders/seller-orders/';
       
-      if (statusFilter !== 'ALL') {
-        possibleOrderEndpoints[0] = `/orders/seller-orders/?status=${statusFilter}`;
-        possibleOrderEndpoints[1] = `/orders/seller/?status=${statusFilter}`;
-        possibleOrderEndpoints[2] = `/orders/?role=seller&status=${statusFilter}`;
-        possibleOrderEndpoints[3] = `/orders/my-store-orders/?status=${statusFilter}`;
-        possibleOrderEndpoints[4] = `/orders/?status=${statusFilter}`;
-      }
+      console.log(`Using seller orders endpoint: ${endpoint}`);
       
-      for (const endpoint of possibleOrderEndpoints) {
-        try {
-          console.log(`Trying order endpoint: ${endpoint}`);
-          const response = await api.get(endpoint);
+      const response = await api.get(endpoint);
+      
+      if (response.data) {
+        const orderData = Array.isArray(response.data) 
+          ? response.data 
+          : (response.data.results || []);
           
-          if (response.data) {
-            if (Array.isArray(response.data)) {
-              orderData = response.data;
-            } else if (response.data.results && Array.isArray(response.data.results)) {
-              orderData = response.data.results;
-            }
-            
-            if (orderData.length > 0) {
-              console.log(`Successfully fetched ${orderData.length} orders from ${endpoint}`);
-              success = true;
-              break;
-            }
-          }
-        } catch (err) {
-          console.log(`Endpoint ${endpoint} failed: ${err.message}`);
+        if (orderData.length > 0) {
+          console.log('Sample order data structure:', JSON.stringify(orderData[0], null, 2));
         }
+        
+        console.log(`Successfully fetched ${orderData.length} orders`);
+        setOrders(orderData);
+      } else {
+        setOrders([]);
       }
-      
-      if (!success) {
-        console.warn('Failed to fetch orders from any endpoint');
-      }
-      
-      setOrders(orderData);
     } catch (err) {
-      console.error('Error in order fetching process:', err);
-      setError(`Could not retrieve orders. Please try again later.`);
+      console.error('Error fetching seller orders:', err);
+      setError(`Could not retrieve orders: ${err.message}`);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -165,7 +141,33 @@ const SellerOrdersPage = () => {
                         {new Date(order.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {order.customer_name || 'Customer #' + order.user_id}
+                        {(() => {
+                          // Debug what fields are available
+                          const hasCustomerName = !!order.customer_name;
+                          const hasUserObj = typeof order.user === 'object' && !!order.user;
+                          const hasUserString = typeof order.user === 'string';
+                          const hasUserId = !!order.user_id;
+                          const hasUsername = !!order.username;
+                          
+                          console.log(`Order ${order.order_id.substring(0,8)} customer data:`, 
+                            {hasCustomerName, hasUserObj, hasUserString, hasUserId, hasUsername, 
+                             user: order.user, username: order.username});
+                          
+                          if (order.customer_name) return order.customer_name;
+                          if (order.username) return order.username;
+                          if (typeof order.user === 'object' && order.user?.username) return order.user.username;
+                          if (typeof order.user === 'string') return order.user;
+                          if (order.user_id) return `Customer #${order.user_id}`;
+                          
+                          for (const [key, value] of Object.entries(order)) {
+                            if ((key.includes('user') || key.includes('customer')) && 
+                                typeof value === 'string' && value !== '') {
+                              return value;
+                            }
+                          }
+                          
+                          return 'Anonymous Customer';
+                        })()}
                       </td>
                       <td className="px-6 py-4">
                         {order.items?.length || 0} item(s)

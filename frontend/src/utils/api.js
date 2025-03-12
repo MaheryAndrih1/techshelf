@@ -19,9 +19,12 @@ export const getMediaUrl = (url) => {
     return url;
   }
   
-  // Otherwise, prepend the base URL without the /api part
-  const baseMediaUrl = API_BASE_URL.replace('/api', '');
-  return `${baseMediaUrl}${url}`;
+  // If the URL starts with a slash, remove it to avoid double slashes
+  const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+  
+  // Get the base URL without the /api part
+  const baseUrl = API_BASE_URL.replace('/api', '');
+  return `${baseUrl}/${cleanUrl}`;
 };
 
 // Add request interceptor to include auth token
@@ -70,7 +73,6 @@ api.interceptors.response.use(
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         
-        // Redirect to login page
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

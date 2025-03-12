@@ -2,8 +2,6 @@ from rest_framework import generics, permissions, status, filters
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-# Remove DjangoFilterBackend
-# from django_filters.rest_framework import DjangoFilterBackend
 from .models import Product, Like
 from .serializers import ProductSerializer, ProductCreateSerializer, LikeSerializer
 from django.db.models import Q
@@ -13,12 +11,15 @@ class ProductListView(generics.ListAPIView):
     """List all products with filtering and sorting"""
     serializer_class = ProductSerializer
     permission_classes = [permissions.AllowAny]
-    filter_backends = [filters.SearchFilter]  # Remove DjangoFilterBackend
+    filter_backends = [filters.SearchFilter] 
     search_fields = ['name', 'description', 'category']
-    # filterset_fields = ['category']  # Remove this as it requires django_filters
     
     def get_queryset(self):
         queryset = Product.objects.all()
+        
+        store = self.request.query_params.get('store')
+        if store:
+            queryset = queryset.filter(store__store_id=store)
         
         # Filter by category manually
         category = self.request.query_params.get('category')
@@ -95,7 +96,6 @@ class ProductLikeView(APIView):
     def post(self, request, product_id):
         product = get_object_or_404(Product, product_id=product_id)
         
-        # Check if user already liked the product
         try:
             like = Like.objects.get(user=request.user, product=product)
             like.delete()
