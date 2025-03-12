@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
@@ -9,62 +9,108 @@ const SellerOrderDetailPage = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [updating, setUpdating] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [updateSuccess, setUpdateSuccess] = useState('');
   const { isAuthenticated, isSeller } = useAuth();
   const navigate = useNavigate();
 
-  const statusOptions = [
-    { value: 'PENDING', label: 'Pending' },
-    { value: 'PROCESSING', label: 'Processing' },
-    { value: 'SHIPPED', label: 'Shipped' },
-    { value: 'DELIVERED', label: 'Delivered' },
-    { value: 'CANCELLED', label: 'Cancelled' }
-  ];
-
   useEffect(() => {
-    if (!isAuthenticated || !isSeller) {
+    if (!isAuthenticated) {
       navigate('/login', { state: { from: `/seller/orders/${orderId}` } });
       return;
     }
 
-    const fetchOrderDetails = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get(`/orders/seller-orders/${orderId}/`);
-        setOrder(response.data);
-      } catch (err) {
-        setError('Failed to load order details');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!isSeller) {
+      navigate('/become-seller');
+      return;
+    }
 
     fetchOrderDetails();
-  }, [orderId, isAuthenticated, isSeller, navigate]);
+  }, [isAuthenticated, isSeller, orderId, navigate]);
 
-  const handleStatusUpdate = async (newStatus) => {
-    setUpdating(true);
-    setStatusMessage('');
+  const fetchOrderDetails = async () => {
+    setLoading(true);
+    try {
+      let orderData = null;
+      const possibleEndpoints = [
+        `/orders/seller-orders/${orderId}/`,
+        `/orders/seller/${orderId}/`,
+        `/orders/${orderId}/`,
+        `/orders/detail/${orderId}/`
+      ];
+      
+      for (const endpoint of possibleEndpoints) {
+        try {
+          console.log(`Trying to fetch order details from: ${endpoint}`);
+          const response = await api.get(endpoint);
+          
+          if (response.data) {
+            orderData = response.data;
+            console.log(`Successfully fetched order from ${endpoint}:`, orderData);
+            break;
+          }
+        } catch (endpointErr) {
+          console.log(`Endpoint ${endpoint} failed: ${endpointErr.message}`);
+        }
+      }
+      
+      if (!orderData) {
+        throw new Error('Could not retrieve order details from any endpoint');
+      }
+      
+      setOrder(orderData);
+    } catch (err) {
+      console.error('Failed to load order details:', err);
+      setError(`Failed to load order details: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateOrderStatus = async (newStatus) => {
+    setStatusUpdating(true);
+    setUpdateSuccess('');
+    setError(null);
     
     try {
-      const response = await api.post(`/orders/seller-orders/${orderId}/update-status/`, {
-        status: newStatus
-      });
+      console.log(`Attempting to update order ${orderId} status to: ${newStatus}`);
+      let response = null;
+      
+      // Try multiple possible endpoints for updating order status
+      const possibleEndpoints = [
+        `/orders/seller-orders/${orderId}/update-status/`,
+        `/orders/seller/${orderId}/update-status/`,
+        `/orders/${orderId}/status/`,
+        `/orders/update-status/${orderId}/`
+      ];
+      
+      for (const endpoint of possibleEndpoints) {
+        try {
+          console.log(`Trying endpoint: ${endpoint}`);
+          response = await api.post(endpoint, { status: newStatus });
+          
+          if (response.data) {
+            console.log('Status update successful:', response.data);
+            break;
+          }
+        } catch (endpointErr) {
+          console.log(`Endpoint ${endpoint} failed: ${endpointErr.message}`);
+        }
+      }
+      
+      if (!response || !response.data) {
+        throw new Error('Failed to update status through any available endpoint');
+      }
       
       setOrder(response.data);
-      setStatusMessage('Order status updated successfully');
+      setUpdateSuccess(`Order status updated to ${newStatus}`);
       
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setStatusMessage('');
-      }, 3000);
+      setTimeout(() => setUpdateSuccess(''), 3000);
     } catch (err) {
-      setError('Failed to update order status');
-      console.error(err);
+      console.error('Failed to update order status:', err);
+      setError('Failed to update order status: ' + err.message);
     } finally {
-      setUpdating(false);
+      setStatusUpdating(false);
     }
   };
 
@@ -81,13 +127,15 @@ const SellerOrderDetailPage = () => {
   if (error || !order) {
     return (
       <Layout>
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error || "Order not found"}
-        </div>
-        <div className="mt-4">
-          <Link to="/seller/dashboard" className="text-blue-600 hover:underline">
-            &larr; Back to Dashboard
-          </Link>
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {error || "Order not found"}
+          </div>
+          <div className="mt-4">
+            <Link to="/seller/orders" className="text-blue-600 hover:underline">
+              &larr; Back to Orders
+            </Link>
+          </div>
         </div>
       </Layout>
     );
@@ -96,146 +144,131 @@ const SellerOrderDetailPage = () => {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <Link to="/seller/dashboard" className="text-blue-600 hover:underline mb-2 inline-block">
-              &larr; Back to Dashboard
-            </Link>
-            <h1 className="text-2xl font-bold">Order #{order.order_id.substring(0, 8)}...</h1>
-            <p className="text-gray-600">
-              Placed on {new Date(order.created_at).toLocaleDateString()}
-            </p>
-          </div>
-          
-          <div>
-            <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${
-              order.order_status === 'DELIVERED' ? 'bg-green-100 text-green-800' : 
-              order.order_status === 'SHIPPED' ? 'bg-blue-100 text-blue-800' : 
-              order.order_status === 'CANCELLED' ? 'bg-red-100 text-red-800' : 
-              'bg-yellow-100 text-yellow-800'
-            }`}>
-              {order.order_status}
-            </span>
-          </div>
+        <div className="mb-6">
+          <Link to="/seller/orders" className="text-blue-600 hover:underline">
+            &larr; Back to Orders
+          </Link>
+          <h1 className="text-2xl font-bold mt-2">Order Details: #{order.order_id.substring(0, 8)}</h1>
         </div>
         
-        {statusMessage && (
+        {updateSuccess && (
           <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
-            {statusMessage}
+            {updateSuccess}
           </div>
         )}
         
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <div className="flex flex-col md:flex-row md:justify-between mb-6">
-            <div>
-              <h2 className="text-lg font-semibold mb-2">Customer Information</h2>
-              <p className="text-gray-700">{order.customer_name || 'Customer #' + order.user}</p>
-              <p className="text-gray-700">{order.customer_email || 'Email not available'}</p>
-            </div>
-            
-            <div className="mt-4 md:mt-0">
-              <h2 className="text-lg font-semibold mb-2">Update Order Status</h2>
-              <div className="flex space-x-2">
-                <select 
-                  className="border rounded px-3 py-2"
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6 border-b pb-4">
+              <div>
+                <h2 className="text-lg font-semibold">Order Information</h2>
+                <p className="text-gray-600">Placed on {new Date(order.created_at).toLocaleString()}</p>
+              </div>
+              <div className="flex items-center">
+                <span className="mr-4">Status:</span>
+                <select
                   value={order.order_status}
-                  disabled={updating}
-                  onChange={(e) => handleStatusUpdate(e.target.value)}
+                  onChange={(e) => updateOrderStatus(e.target.value)}
+                  disabled={statusUpdating}
+                  className="border rounded px-3 py-2"
                 >
-                  {statusOptions.map(option => (
-                    <option 
-                      key={option.value} 
-                      value={option.value}
-                      disabled={option.value === 'CANCELLED' && ['DELIVERED', 'SHIPPED'].includes(order.order_status)}
-                    >
-                      {option.label}
-                    </option>
-                  ))}
+                  <option value="PENDING">Pending</option>
+                  <option value="PROCESSING">Processing</option>
+                  <option value="SHIPPED">Shipped</option>
+                  <option value="DELIVERED">Delivered</option>
+                  <option value="CANCELLED">Cancelled</option>
                 </select>
-                {updating && <div className="loader"></div>}
+                {statusUpdating && (
+                  <div className="ml-2 w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                )}
               </div>
             </div>
-          </div>
-          
-          <h2 className="text-lg font-semibold mb-4 border-t pt-4">Order Items</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-4 py-2 text-left">Product</th>
-                  <th className="px-4 py-2 text-center">Price</th>
-                  <th className="px-4 py-2 text-center">Quantity</th>
-                  <th className="px-4 py-2 text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {order.items?.map(item => (
-                  <tr key={item.id || item.product_id}>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center">
-                        <Link to={`/products/${item.product_id}`}>
-                          {item.product_name || item.product?.name || 'Product'}
-                        </Link>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-center">${parseFloat(item.price || 0).toFixed(2)}</td>
-                    <td className="px-4 py-4 text-center">{item.quantity}</td>
-                    <td className="px-4 py-4 text-right">${(parseFloat(item.price || 0) * item.quantity).toFixed(2)}</td>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h3 className="font-medium mb-2">Customer Information</h3>
+                <p className="text-gray-700">Customer: {order.customer_name || 'N/A'}</p>
+                <p className="text-gray-700">Email: {order.customer_email || 'N/A'}</p>
+                <p className="text-gray-700">Phone: {order.customer_phone || 'N/A'}</p>
+              </div>
+              
+              <div>
+                <h3 className="font-medium mb-2">Shipping Address</h3>
+                {order.shipping_info ? (
+                  <address className="not-italic text-gray-700">
+                    {order.shipping_info.shipping_address}<br />
+                    {order.shipping_info.city}, {order.shipping_info.postal_code}<br />
+                    {order.shipping_info.country}
+                  </address>
+                ) : (
+                  <p className="text-gray-500">No shipping information available</p>
+                )}
+              </div>
+            </div>
+            
+            <h3 className="font-medium mb-4">Order Items</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Price</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-gray-50">
-                <tr>
-                  <td colSpan="3" className="px-4 py-3 text-right font-medium">Subtotal:</td>
-                  <td className="px-4 py-3 text-right">${(parseFloat(order.total_amount || 0) - parseFloat(order.tax_amount || 0) - parseFloat(order.shipping_cost || 0)).toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td colSpan="3" className="px-4 py-3 text-right font-medium">Shipping:</td>
-                  <td className="px-4 py-3 text-right">${parseFloat(order.shipping_cost || 0).toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td colSpan="3" className="px-4 py-3 text-right font-medium">Tax:</td>
-                  <td className="px-4 py-3 text-right">${parseFloat(order.tax_amount || 0).toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td colSpan="3" className="px-4 py-3 text-right font-bold">Total:</td>
-                  <td className="px-4 py-3 text-right font-bold">${parseFloat(order.total_amount || 0).toFixed(2)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mb-4">Shipping Information</h2>
-            {order.shipping_info ? (
-              <address className="not-italic">
-                {order.shipping_info.shipping_address}<br />
-                {order.shipping_info.city}, {order.shipping_info.postal_code}<br />
-                {order.shipping_info.country}
-              </address>
-            ) : (
-              <p className="text-gray-600">Shipping information not available</p>
-            )}
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mb-4">Payment Information</h2>
-            <p>
-              <span className="font-medium">Status:</span>{' '}
-              <span className={`${
-                order.payment_status === 'PAID' ? 'text-green-600' :
-                order.payment_status === 'REFUNDED' ? 'text-blue-600' :
-                'text-yellow-600'
-              }`}>
-                {order.payment_status}
-              </span>
-            </p>
-            <p>
-              <span className="font-medium">Payment Method:</span>{' '}
-              <span className="text-gray-600">{order.payment_method || 'Not specified'}</span>
-            </p>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {order.items?.map((item, index) => (
+                    <tr key={item.id || index}>
+                      <td className="px-4 py-3">
+                        {item.product_name || `Product #${item.product_id}`}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        ${parseFloat(item.price).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {item.quantity}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        ${(parseFloat(item.price) * item.quantity).toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-gray-50">
+                  <tr>
+                    <td colSpan="3" className="px-4 py-3 text-right font-medium">Subtotal:</td>
+                    <td className="px-4 py-3 text-right">
+                      ${(parseFloat(order.total_amount) - parseFloat(order.tax_amount || 0) - parseFloat(order.shipping_cost || 0)).toFixed(2)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colSpan="3" className="px-4 py-3 text-right font-medium">Shipping:</td>
+                    <td className="px-4 py-3 text-right">
+                      ${parseFloat(order.shipping_cost || 0).toFixed(2)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colSpan="3" className="px-4 py-3 text-right font-medium">Tax:</td>
+                    <td className="px-4 py-3 text-right">
+                      ${parseFloat(order.tax_amount || 0).toFixed(2)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colSpan="3" className="px-4 py-3 text-right font-medium">Total:</td>
+                    <td className="px-4 py-3 text-right font-bold">
+                      ${parseFloat(order.total_amount).toFixed(2)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </div>
       </div>

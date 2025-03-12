@@ -42,10 +42,10 @@ const NotificationsPage = () => {
     setMarkingRead(prev => ({ ...prev, [notificationId]: true }));
     
     try {
-      await api.patch(`/notifications/${notificationId}/`, {
-        is_read: true
-      });
+      // Using POST instead of PATCH - simpler and more compatible approach
+      await api.post(`/notifications/${notificationId}/read/`, {});
 
+      // Update local state to reflect the change
       setNotifications(prev => 
         prev.map(notification => 
           notification.notification_id === notificationId
@@ -65,8 +65,10 @@ const NotificationsPage = () => {
 
   const markAllAsRead = async () => {
     try {
+      // Simple POST request to mark all notifications as read
       await api.post('/notifications/mark-all-read/');
       
+      // Update all notifications in state to be marked as read
       setNotifications(prev =>
         prev.map(notification => ({
           ...notification,
@@ -75,26 +77,7 @@ const NotificationsPage = () => {
       );
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err);
-      
-      try {
-        await Promise.all(
-          notifications
-            .filter(notification => !notification.is_read)
-            .map(notification => 
-              api.patch(`/notifications/${notification.notification_id}/`, { is_read: true })
-            )
-        );
-        
-        setNotifications(prev =>
-          prev.map(notification => ({
-            ...notification,
-            is_read: true
-          }))
-        );
-      } catch (fallbackErr) {
-        console.error('Fallback also failed:', fallbackErr);
-        setError('Failed to mark notifications as read. Please try again.');
-      }
+      setError('Failed to mark all notifications as read. Please try again.');
     }
   };
 

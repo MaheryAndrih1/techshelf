@@ -56,19 +56,7 @@ const Footer = () => {
               </a>
             </div>
             
-            <div className="mt-4 text-gray-400">
-              <p>Subscribe to our newsletter</p>
-              <div className="mt-2 flex">
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  className="px-3 py-2 w-full rounded-l text-gray-800"
-                />
-                <button className="bg-blue-600 px-4 py-2 rounded-r hover:bg-blue-700">
-                  Subscribe
-                </button>
-              </div>
-            </div>
+           
           </div>
         </div>
         
