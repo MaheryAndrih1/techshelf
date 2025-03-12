@@ -21,7 +21,14 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         fields = ['name', 'price', 'stock', 'category', 'description', 'image']
     
     def create(self, validated_data):
+        # Get the store from the context
         store = self.context['request'].user.store
+        
+        # Remove store from validated_data if it exists to prevent duplicate
+        if 'store' in validated_data:
+            validated_data.pop('store')
+            
+        # Create the product with the store
         product = Product.objects.create(store=store, **validated_data)
         return product
 

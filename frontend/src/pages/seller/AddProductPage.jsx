@@ -92,7 +92,7 @@ const AddProductPage = () => {
         productFormData.append('image', image);
       }
 
-      // Submit the product
+      // Fix the API endpoint - remove the duplicate /api/ prefix
       const response = await api.post('/products/create/', productFormData, {
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -119,7 +119,7 @@ const AddProductPage = () => {
     } catch (err) {
       const message = err.response?.data?.error || 'Failed to create product';
       setError(message);
-      console.error(err);
+      console.error('Product creation error:', err.response?.data || err);
     } finally {
       setLoading(false);
     }
