@@ -53,8 +53,6 @@ class ProductListView(generics.ListAPIView):
         elif sort == 'name':
             queryset = queryset.order_by('name')
         elif sort == 'popularity':
-            # Get count of order items for each product 
-            # (annotate products with their sales count)
             order_counts = OrderItem.objects.filter(
                 product_id=OuterRef('product_id')
             ).values('product_id').annotate(
