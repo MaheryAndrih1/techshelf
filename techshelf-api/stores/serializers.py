@@ -9,14 +9,23 @@ class StoreThemeSerializer(serializers.ModelSerializer):
 class StoreSerializer(serializers.ModelSerializer):
     theme = StoreThemeSerializer(read_only=True)
     user = serializers.StringRelatedField()
+    average_rating = serializers.SerializerMethodField()
+    rating_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Store
-        fields = ['store_id', 'store_name', 'subdomain_name', 'user', 'theme', 'created_at']
-        read_only_fields = ['store_id', 'user', 'created_at']
+        fields = ['store_id', 'store_name', 'subdomain_name', 'user', 'theme', 'created_at', 'average_rating', 'rating_count']
+        read_only_fields = ['store_id', 'user', 'created_at', 'average_rating', 'rating_count']
+    
+    def get_average_rating(self, obj):
+        ratings = obj.ratings.all()
+        if not ratings.exists():
+            return None
+        return sum(rating.score for rating in ratings) / ratings.count()
+    
+    def get_rating_count(self, obj):
+        return obj.ratings.count()
 
-# The StoreCreateSerializer is not needed anymore since we're handling creation manually
-# but we'll keep it for backward compatibility
 class StoreCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Store

@@ -4,18 +4,25 @@ from .models import Product, Like
 class ProductSerializer(serializers.ModelSerializer):
     store = serializers.StringRelatedField()
     store_name = serializers.SerializerMethodField()
+    store_subdomain = serializers.SerializerMethodField()  # Add this field
     like_count = serializers.SerializerMethodField(read_only=True)
     is_liked = serializers.SerializerMethodField(read_only=True)
     
     class Meta:
         model = Product
         fields = ['product_id', 'name', 'price', 'stock', 'category', 'description', 
-                 'image', 'store', 'store_name', 'created_at', 'updated_at',
+                 'image', 'store', 'store_name', 'store_subdomain',  # Include store_subdomain
+                 'created_at', 'updated_at',
                  'like_count', 'is_liked']
-        read_only_fields = ['product_id', 'store', 'created_at', 'updated_at', 'like_count', 'is_liked']
+        read_only_fields = ['product_id', 'store', 'created_at', 'updated_at', 
+                           'store_name', 'store_subdomain', 'like_count', 'is_liked']
     
     def get_store_name(self, obj):
         return obj.store.store_name if obj.store else None
+    
+    # Add this method to get the store's subdomain
+    def get_store_subdomain(self, obj):
+        return obj.store.subdomain_name if obj.store else None
 
     def get_like_count(self, obj):
         return obj.likes.count()

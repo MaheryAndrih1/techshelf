@@ -60,7 +60,7 @@ const AppRoutes = () => {
       <Route path="/stores" element={<StoreListPage />} />
       <Route path="/stores/:subdomain" element={<StoreDetailPage />} />
       
-      {/* Cart is now public - guest cart feature */}
+      {/* Cart */}
       <Route path="/cart" element={<CartPage />} />
       
       {/* Protected Routes */}

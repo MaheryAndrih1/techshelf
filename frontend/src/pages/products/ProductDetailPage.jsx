@@ -29,9 +29,7 @@ const ProductDetailPage = () => {
         if (isAuthenticated && response.data.is_liked !== undefined) {
           setLiked(response.data.is_liked);
         }
-
       } catch (err) {
-        console.error("Error fetching product:", err);
         setError('Failed to load product details');
       } finally {
         setLoading(false);
@@ -39,7 +37,7 @@ const ProductDetailPage = () => {
     };
 
     fetchProduct();
-  }, [productId, isAuthenticated, currentUser]);
+  }, [productId, isAuthenticated]);
 
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value);
@@ -52,7 +50,7 @@ const ProductDetailPage = () => {
     try {
       await addToCart(productId, quantity);
     } catch (err) {
-      console.error("Failed to add to cart:", err);
+      // Error is handled by the CartContext
     }
   };
 
@@ -82,7 +80,7 @@ const ProductDetailPage = () => {
       setProduct(updatedProduct.data);
       
     } catch (err) {
-      console.error("Error updating like status:", err);
+      // Silent fail - keep UI state as is
     } finally {
       setLikeLoading(false);
     }
@@ -145,7 +143,9 @@ const ProductDetailPage = () => {
                   className={`text-gray-400 hover:text-red-500 focus:outline-none transition-colors ${liked ? 'text-red-500' : ''}`}
                   aria-label={liked ? "Unlike product" : "Like product"}
                 >
-                  {liked ? (
+                  {likeLoading ? (
+                    <div className="h-8 w-8 border-t-2 border-b-2 border-red-500 rounded-full animate-spin"></div>
+                  ) : liked ? (
                     <svg className="h-8 w-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
                     </svg>
@@ -176,13 +176,20 @@ const ProductDetailPage = () => {
                 )}
               </div>
               
-              {product.store && (
+              {/* Store information */}
+              {product.store_subdomain ? (
+                <div className="mb-4">
+                  <p className="text-gray-600">
+                    Sold by: <Link to={`/stores/${product.store_subdomain}`} className="text-blue-600 hover:underline">{product.store_name}</Link>
+                  </p>
+                </div>
+              ) : product.store ? (
                 <div className="mb-4">
                   <p className="text-gray-600">
                     Sold by: <Link to={`/stores/${product.store}`} className="text-blue-600 hover:underline">{product.store_name}</Link>
                   </p>
                 </div>
-              )}
+              ) : null}
               
               <div className="mb-6">
                 <h2 className="text-lg font-semibold mb-2">Description</h2>
