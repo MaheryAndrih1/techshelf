@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import api from '../../utils/api';
@@ -14,6 +14,13 @@ const ProductListPage = () => {
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
   const navigate = useNavigate();
+  
+  // Local state for price filters with debounce
+  const [localPriceFilters, setLocalPriceFilters] = useState({
+    minPrice: searchParams.get('minPrice') || '',
+    maxPrice: searchParams.get('maxPrice') || ''
+  });
+  const [priceFilterTimeout, setPriceFilterTimeout] = useState(null);
   
   const search = searchParams.get('search') || '';
   const category = searchParams.get('category') || '';
@@ -42,7 +49,11 @@ const ProductListPage = () => {
         setProducts(response.data.results || response.data);
         
         // Extract unique categories
-        const uniqueCategories = new Set(response.data.results.map(product => product.category));
+        const uniqueCategories = new Set(
+          (response.data.results || response.data || [])
+          .filter(product => product?.category)
+          .map(product => product.category)
+        );
         setCategories(Array.from(uniqueCategories));
         
       } catch (err) {
@@ -56,6 +67,14 @@ const ProductListPage = () => {
     fetchProducts();
   }, [search, category, sort, minPrice, maxPrice]);
   
+  // Update local price filter state when URL params change
+  useEffect(() => {
+    setLocalPriceFilters({
+      minPrice: searchParams.get('minPrice') || '',
+      maxPrice: searchParams.get('maxPrice') || ''
+    });
+  }, [searchParams]);
+  
   const updateFilters = (newFilters) => {
     const current = {};
     for (const [key, value] of searchParams.entries()) {
@@ -65,6 +84,55 @@ const ProductListPage = () => {
     setSearchParams({
       ...current,
       ...newFilters
+    });
+  };
+  
+  // Handle price filter change with debounce
+  const handlePriceChange = (e) => {
+    const { name, value } = e.target;
+    
+    setLocalPriceFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear any existing timeout
+    if (priceFilterTimeout) {
+      clearTimeout(priceFilterTimeout);
+    }
+    
+    // Set a new timeout to update URL params after 800ms of inactivity
+    const timeoutId = setTimeout(() => {
+      if (name === 'minPrice' || name === 'maxPrice') {
+        const updates = {};
+        
+        if (name === 'minPrice') {
+          updates.minPrice = value || '';
+        } else {
+          updates.maxPrice = value || '';
+        }
+        
+        updateFilters(updates);
+      }
+    }, 800);
+    
+    setPriceFilterTimeout(timeoutId);
+  };
+  
+  // Handle form submission for price filters
+  const handlePriceFilterSubmit = (e) => {
+    e.preventDefault();
+    
+    // Clear any pending timeout
+    if (priceFilterTimeout) {
+      clearTimeout(priceFilterTimeout);
+      setPriceFilterTimeout(null);
+    }
+    
+    // Apply both filters immediately
+    updateFilters({
+      minPrice: localPriceFilters.minPrice || '',
+      maxPrice: localPriceFilters.maxPrice || ''
     });
   };
   
@@ -129,25 +197,37 @@ const ProductListPage = () => {
               </div>
             </div>
             
-            {/* Price range filter */}
+            {/* Price range filter - UPDATED with form */}
             <div className="mb-4">
               <h3 className="font-medium mb-2">Price Range</h3>
-              <div className="flex space-x-2">
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={minPrice}
-                  onChange={(e) => updateFilters({ minPrice: e.target.value })}
-                  className="w-1/2 px-2 py-1 border rounded"
-                />
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={maxPrice}
-                  onChange={(e) => updateFilters({ maxPrice: e.target.value })}
-                  className="w-1/2 px-2 py-1 border rounded"
-                />
-              </div>
+              <form onSubmit={handlePriceFilterSubmit}>
+                <div className="flex space-x-2 mb-2">
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    name="minPrice"
+                    value={localPriceFilters.minPrice}
+                    onChange={handlePriceChange}
+                    className="w-1/2 px-2 py-1 border rounded"
+                    min="0"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    name="maxPrice"
+                    value={localPriceFilters.maxPrice}
+                    onChange={handlePriceChange}
+                    className="w-1/2 px-2 py-1 border rounded"
+                    min="0"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full px-2 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                >
+                  Apply Price Filter
+                </button>
+              </form>
             </div>
             
             {/* Sort options */}

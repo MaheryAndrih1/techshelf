@@ -2,9 +2,10 @@ from rest_framework import generics, permissions, status, filters
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from .models import Product, Like, ProductLike
+from .models import Product, ProductLike
 from .serializers import ProductSerializer, ProductCreateSerializer, LikeSerializer
-from django.db.models import Q
+from django.db.models import Q, Count, F, OuterRef, Subquery, IntegerField, Sum
+from orders.models import OrderItem
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from stores.models import Store
 import logging
@@ -12,46 +13,61 @@ import logging
 logger = logging.getLogger(__name__)
 
 class ProductListView(generics.ListAPIView):
-    """List all products with filtering and sorting"""
+    """List all products with optional filtering"""
     serializer_class = ProductSerializer
     permission_classes = [permissions.AllowAny]
-    filter_backends = [filters.SearchFilter] 
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description', 'category']
+    ordering_fields = ['price', 'created_at']
     
     def get_queryset(self):
         queryset = Product.objects.all()
         
-        store = self.request.query_params.get('store')
-        if store:
-            queryset = queryset.filter(store__store_id=store)
-        
-        # Filter by category manually
+        # Filter by store if specified
+        store_id = self.request.query_params.get('store')
+        if store_id:
+            queryset = queryset.filter(store__store_id=store_id)
+            
+        # Filter by category if specified
         category = self.request.query_params.get('category')
         if category:
             queryset = queryset.filter(category=category)
-        
-        # Filter by price range
+            
+        # Filter by price range if specified
         min_price = self.request.query_params.get('min_price')
-        if min_price:
-            queryset = queryset.filter(price__gte=min_price)
-        
+        if min_price and min_price.isdigit():
+            queryset = queryset.filter(price__gte=float(min_price))
+            
         max_price = self.request.query_params.get('max_price')
-        if max_price:
-            queryset = queryset.filter(price__lte=max_price)
-        
-        # Sort products
-        sort = self.request.query_params.get('sort', 'newest')
-        if sort == 'price_low':
+        if max_price and max_price.isdigit():
+            queryset = queryset.filter(price__lte=float(max_price))
+            
+        # Sort by criteria
+        sort = self.request.query_params.get('sort')
+        if sort == 'newest':
+            queryset = queryset.order_by('-created_at')
+        elif sort == 'price_low':
             queryset = queryset.order_by('price')
         elif sort == 'price_high':
             queryset = queryset.order_by('-price')
         elif sort == 'name':
             queryset = queryset.order_by('name')
         elif sort == 'popularity':
-            queryset = queryset.order_by('-like__count')
-        else:  # Default to newest
+            # Get count of order items for each product 
+            # (annotate products with their sales count)
+            order_counts = OrderItem.objects.filter(
+                product_id=OuterRef('product_id')
+            ).values('product_id').annotate(
+                order_count=Count('id')
+            ).values('order_count')
+            
+            queryset = queryset.annotate(
+                order_count=Subquery(order_counts, output_field=IntegerField()) or 0
+            ).order_by('-order_count', '-created_at')  # Fall back to newest if tied
+        else:
+            # Default sorting
             queryset = queryset.order_by('-created_at')
-        
+            
         return queryset
 
 class ProductDetailView(generics.RetrieveAPIView):
