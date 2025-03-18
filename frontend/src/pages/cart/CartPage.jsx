@@ -212,17 +212,6 @@ const CartPage = () => {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">Shopping Cart ({cartTotals.itemCount} items)</h1>
         
-        {isGuestCart && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded flex items-center justify-between">
-            <div>
-              <span className="font-semibold">Shopping as Guest:</span> Your cart will be saved on this device. 
-              <Link to="/login" className="ml-2 text-blue-700 underline">
-                Log in
-              </Link> to save your cart to your account.
-            </div>
-          </div>
-        )}
-        
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
           <div className="p-6">
             <div className="flex font-bold text-gray-500 pb-2 border-b">

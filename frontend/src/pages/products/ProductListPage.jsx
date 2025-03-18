@@ -101,7 +101,7 @@ const ProductListPage = () => {
       clearTimeout(priceFilterTimeout);
     }
     
-    // Set a new timeout to update URL params after 800ms of inactivity
+    // Set a new timeout after 1400ms
     const timeoutId = setTimeout(() => {
       if (name === 'minPrice' || name === 'maxPrice') {
         const updates = {};
@@ -114,7 +114,7 @@ const ProductListPage = () => {
         
         updateFilters(updates);
       }
-    }, 800);
+    }, 1400);
     
     setPriceFilterTimeout(timeoutId);
   };
