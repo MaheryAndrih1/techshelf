@@ -149,10 +149,6 @@ const Layout = ({ children }) => {
                       <span className={`cart-item-count ${animateCart ? 'cart-badge-animation' : ''}`}>
                         {cartItems.length}
                       </span>
-                      
-                      {animateCart && (
-                        <span className="cart-added-indicator">+1</span>
-                      )}
                     </>
                   )}
                 </div>
