@@ -415,7 +415,7 @@ export const CartProvider = ({ children }) => {
     setError(null);
     
     try {
-      // Make sure we pass the save_card flag correctly
+      // Update the checkout endpoint to use orders/checkout/ instead of just checkout/
       const response = await api.post('/orders/checkout/', {
         ...checkoutData,
         save_card: checkoutData.save_card || false

@@ -4,6 +4,7 @@ import Layout from '../../components/layout/Layout';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import CustomButton from '../../components/CustomButton';
 
 const ProductDetailPage = () => {
   const { productId } = useParams();
@@ -229,20 +230,16 @@ const ProductDetailPage = () => {
                     </div>
                   </div>
                   
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={cartLoading}
-                    className="w-full py-3 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300 flex items-center justify-center"
+                  <CustomButton
+                    onClick={() => handleAddToCart(product.product_id)}
+                    disabled={product.stock <= 0}
+                    type="primary"
+                    size="large"
+                    fullWidth={true}
+                    className="mb-4"
                   >
-                    {cartLoading ? (
-                      <>
-                        <div className="w-4 h-4 border-t-transparent border-2 border-white rounded-full animate-spin mr-2"></div>
-                        Adding to Cart...
-                      </>
-                    ) : (
-                      'Add to Cart'
-                    )}
-                  </button>
+                    {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
+                  </CustomButton>
                 </div>
               )}
               

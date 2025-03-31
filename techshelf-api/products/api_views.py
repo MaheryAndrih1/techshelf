@@ -1,6 +1,9 @@
 from rest_framework import generics, permissions, status, filters
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from .models import Product, ProductLike
 from .serializers import ProductSerializer, ProductCreateSerializer, LikeSerializer
@@ -148,3 +151,19 @@ class CategoryProductsView(generics.ListAPIView):
     def get_queryset(self):
         category = self.kwargs['category']
         return Product.objects.filter(category=category)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_liked_products(request):
+    """
+    Get all products that the current user has liked
+    """
+    user = request.user
+    liked_products = Product.objects.filter(likes__user=user)
+    
+    paginator = PageNumberPagination()
+    paginator.page_size = 20
+    result_page = paginator.paginate_queryset(liked_products, request)
+    
+    serializer = ProductSerializer(result_page, many=True, context={'request': request})
+    return paginator.get_paginated_response(serializer.data)

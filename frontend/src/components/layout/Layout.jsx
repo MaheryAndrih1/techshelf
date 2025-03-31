@@ -65,23 +65,23 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="bg-white shadow-sm">
+      <header className="bg-[#1a1f24] text-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
               <Link to="/" className="flex-shrink-0 flex items-center">
-                <span className="text-xl font-bold text-blue-600">TechShelf</span>
+                <span className="text-xl font-bold text-[#c5630c]">TechShelf</span>
               </Link>
               <nav className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 <Link 
                   to="/products" 
-                  className={`${location.pathname === '/products' ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                  className={`${location.pathname === '/products' ? 'border-[#c5630c] text-white' : 'border-transparent text-gray-300 hover:border-gray-400 hover:text-white'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
                 >
                   Products
                 </Link>
                 <Link 
                   to="/stores" 
-                  className={`${location.pathname === '/stores' ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                  className={`${location.pathname === '/stores' ? 'border-[#c5630c] text-white' : 'border-transparent text-gray-300 hover:border-gray-400 hover:text-white'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
                 >
                   Stores
                 </Link>
@@ -91,14 +91,14 @@ const Layout = ({ children }) => {
                     {isSeller ? (
                       <Link 
                         to="/seller/dashboard" 
-                        className={`${location.pathname.startsWith('/seller') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                        className={`${location.pathname.startsWith('/seller') ? 'border-[#c5630c] text-white' : 'border-transparent text-gray-300 hover:border-gray-400 hover:text-white'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
                       >
                         Seller Dashboard
                       </Link>
                     ) : (
                       <Link 
                         to="/become-seller" 
-                        className={`${location.pathname === '/become-seller' ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                        className={`${location.pathname === '/become-seller' ? 'border-[#c5630c] text-white' : 'border-transparent text-gray-300 hover:border-gray-400 hover:text-white'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
                       >
                         Become a Seller
                       </Link>
@@ -117,7 +117,7 @@ const Layout = ({ children }) => {
                       name="search" 
                       type="text" 
                       placeholder="Search products..." 
-                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 text-black focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-[#c5630c] focus:border-[#c5630c] sm:text-sm" 
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -133,7 +133,7 @@ const Layout = ({ children }) => {
             </div>
             
             <div className="flex items-center">
-              <Link to="/cart" className="ml-4 flow-root text-gray-500 hover:text-gray-900">
+              <Link to="/cart" className="ml-4 flow-root text-gray-300 hover:text-white">
                 <div className="cart-icon-container">
                   <svg 
                     className={`h-6 w-6 ${animateCart ? 'cart-pop-animation' : ''}`} 
@@ -155,7 +155,7 @@ const Layout = ({ children }) => {
               </Link>
               
               {isAuthenticated && (
-                <Link to="/notifications" className="ml-4 flow-root text-gray-500 hover:text-gray-900">
+                <Link to="/notifications" className="ml-4 flow-root text-gray-300 hover:text-white">
                   <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
@@ -165,9 +165,9 @@ const Layout = ({ children }) => {
               {isAuthenticated ? (
                 <div className="ml-4 relative">
                   <div>
-                    <button onClick={toggleProfileMenu} className="flex text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-gray-300 transition">
+                    <button onClick={toggleProfileMenu} className="flex text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-gray-400 transition">
                       <span className="sr-only">Open user menu</span>
-                      <div className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                      <div className="h-8 w-8 rounded-full bg-[#c5630c] text-white flex items-center justify-center">
                         {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
                       </div>
                     </button>
@@ -179,6 +179,9 @@ const Layout = ({ children }) => {
                       </Link>
                       <Link to="/orders" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         Your Orders
+                      </Link>
+                      <Link to="/liked-products" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        Liked Products
                       </Link>
 
                       {isSeller && (
@@ -200,10 +203,10 @@ const Layout = ({ children }) => {
                 </div>
               ) : (
                 <div className="ml-4 flex items-center md:ml-6">
-                  <Link to="/login" className="inline-block text-sm px-4 py-2 leading-none border rounded text-blue-600 border-blue-600 hover:border-transparent hover:text-white hover:bg-blue-600">
+                  <Link to="/login" className="inline-block text-sm px-4 py-2 leading-none border rounded text-white border-[#c5630c] hover:border-transparent hover:text-white hover:bg-[#c5630c]">
                     Login
                   </Link>
-                  <Link to="/register" className="ml-2 inline-block text-sm px-4 py-2 leading-none rounded text-white bg-blue-600 hover:bg-blue-700">
+                  <Link to="/register" className="ml-2 inline-block text-sm px-4 py-2 leading-none rounded text-white bg-[#c5630c] hover:bg-[#e17a1d]">
                     Register
                   </Link>
                 </div>
@@ -256,7 +259,7 @@ const Layout = ({ children }) => {
               <div className="pt-4 pb-3 border-t border-gray-200">
                 <div className="flex items-center px-4">
                   <div className="flex-shrink-0">
-                    <div className="h-10 w-10 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full bg-[#c5630c] text-white flex items-center justify-center">
                       {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
                     </div>
                   </div>
@@ -272,6 +275,9 @@ const Layout = ({ children }) => {
                   <Link to="/orders" className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">
                     Your Orders
                   </Link>
+                  <Link to="/liked-products" className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">
+                    Liked Products
+                  </Link>
                   <Link to="/notifications" className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">
                     Notifications
                   </Link>
@@ -283,10 +289,14 @@ const Layout = ({ children }) => {
             ) : (
               <div className="pt-4 pb-3 border-t border-gray-200">
                 <div className="flex flex-col space-y-2 px-4">
-                  <Link to="/login" className="block text-center py-2 px-4 rounded border border-blue-600 text-blue-600 hover:text-white hover:bg-blue-600">
+                  <Link 
+                    to="/login" 
+                    className="block text-center py-2 px-4 rounded border border-[#c5630c] text-[#c5630c] hover:text-white hover:bg-[#c5630c]">
                     Login
                   </Link>
-                  <Link to="/register" className="block text-center py-2 px-4 rounded text-white bg-blue-600 hover:bg-blue-700">
+                  <Link 
+                    to="/register" 
+                    className="block text-center py-2 px-4 rounded text-white bg-[#c5630c] hover:bg-[#e17a1d]">
                     Register
                   </Link>
                 </div>
@@ -300,7 +310,7 @@ const Layout = ({ children }) => {
         {children}
       </main>
       
-      <footer className="bg-white border-t border-gray-200 py-8">
+      <footer className="bg-[#33353a] text-white border-t border-gray-700 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="md:flex md:items-center md:justify-between">
             <div className="flex justify-center md:order-2 space-x-6">
@@ -324,7 +334,7 @@ const Layout = ({ children }) => {
               </a>
             </div>
             <div className="mt-8 md:mt-0 md:order-1">
-              <p className="text-center text-base text-gray-500">
+              <p className="text-center text-base text-gray-300">
                 &copy; 2025 TechShelf, Inc. All rights reserved.
               </p>
             </div>

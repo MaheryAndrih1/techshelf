@@ -151,6 +151,23 @@ const OrderDetailPage = () => {
     );
   }
 
+  if (error) {
+    return (
+      <Layout>
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+          <Link to="/orders">
+            <CustomButton type="outline">
+              Back to Orders
+            </CustomButton>
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
+
   if (error || !order) {
     return (
       <Layout>
@@ -169,6 +186,14 @@ const OrderDetailPage = () => {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#33353a]">Order Details</h1>
+          <Link to="/orders">
+            <CustomButton type="outline" size="small">
+              Back to Orders
+            </CustomButton>
+          </Link>
+        </div>
         <div className="flex justify-between items-center mb-6">
           <div>
             <Link to="/orders" className="text-blue-600 hover:underline mb-2 inline-block">

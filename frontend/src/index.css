@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+:root {
+  /* New color palette */
+  --color-primary: #c5630c;       /* Orange/rust */
+  --color-secondary: #a47f6f;     /* Taupe */
+  --color-dark: #33353a;          /* Dark gray */
+  --color-darker: #1a1f24;        /* Very dark gray */
+  --color-darkest: #060a0d;       /* Near black */
+  
+  /* Common derivatives */
+  --color-primary-light: #e17a1d; /* Lighter primary for hover */
+  --color-primary-dark: #9e4f09;  /* Darker primary for active */
+  --color-secondary-light: #b59485; /* Lighter secondary for hover */
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -8,6 +22,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f3f4f6;
+  color: var(--color-dark);
 }
 
 code {
@@ -17,7 +32,7 @@ code {
 
 .loader {
   border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: #3498db;
+  border-left-color: #c5630c;
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -47,9 +62,9 @@ code {
 }
 
 @keyframes badgePop {
-  0% { transform: scale(1); background-color: #ef4444; }
-  50% { transform: scale(1.5); background-color: #f87171; }
-  100% { transform: scale(1); background-color: #ef4444; }
+  0% { transform: scale(1); background-color: var(--color-primary); }
+  50% { transform: scale(1.5); background-color: var(--color-primary-light); }
+  100% { transform: scale(1); background-color: var(--color-primary); }
 }
 
 @keyframes fadeInOut {
@@ -79,7 +94,7 @@ code {
   position: absolute;
   top: -8px;
   right: -8px;
-  background-color: #ef4444;
+  background-color: var(--color-primary);
   color: white;
   font-size: 0.75rem;
   font-weight: bold;
@@ -90,4 +105,515 @@ code {
   justify-content: center;
   border-radius: 1rem;
   transition: transform 0.2s;
+}
+
+/* Store theme variables - default values */
+:root {
+  --store-primary-color: var(--color-primary);
+  --store-secondary-color: var(--color-secondary);
+  --store-primary-text: #ffffff;
+  --store-secondary-text: #ffffff;
+}
+
+/* Store theme container styles */
+.store-theme-container button.themed-button {
+  background-color: var(--store-primary-color);
+  border-color: var(--store-primary-color);
+  color: white;
+}
+
+.store-theme-container button.themed-button:hover {
+  background-color: var(--store-secondary-color);
+  border-color: var(--store-secondary-color);
+}
+
+.store-theme-container .themed-heading {
+  color: var(--store-primary-color);
+}
+
+.store-theme-container .themed-background {
+  background-color: var(--store-primary-color);
+}
+
+.store-theme-container .themed-border {
+  border-color: var(--store-primary-color);
+}
+
+/* Gradient background using theme colors */
+.store-theme-container .themed-gradient {
+  background: linear-gradient(to right, var(--store-primary-color), var(--store-secondary-color));
+}
+  
+/* Enhanced Store theme variables - default values */
+:root {
+  --store-primary-color: #3498db;
+  --store-secondary-color: #2ecc71;
+  --store-primary-text: #ffffff;
+  --store-secondary-text: #ffffff;
+}
+
+/* Store theme styles for larger areas */
+.themed-primary-bg {
+  background-color: var(--store-primary-color);
+  color: white;
+}
+
+.themed-secondary-bg {
+  background-color: var(--store-secondary-color);
+  color: white;
+}
+
+/* Creative diagonal stripes using secondary color */
+.diagonal-stripes {
+  background-image: linear-gradient(
+    135deg,
+    var(--store-secondary-color) 25%,
+    transparent 25%,
+    transparent 50%,
+    var(--store-secondary-color) 50%,
+    var(--store-secondary-color) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 30px 30px;
+}
+
+/* Button styles with fixed hover states */
+.themed-button {
+  background-color: var(--color-primary);
+  color: white;
+  border: 2px solid var(--color-primary);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+/* Override any inherited hover styles to ensure our hover color shows */
+.themed-button:hover:not(:disabled),
+.store-theme-container .themed-button:hover:not(:disabled),
+button.themed-button:hover:not(:disabled) {
+  background-color: var(--color-primary-light) !important;
+  border-color: var(--color-primary-light) !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.themed-button:active:not(:disabled) {
+  transform: translateY(0);
+  background-color: var(--color-primary-dark) !important;
+  border-color: var(--color-primary-dark) !important;
+}
+
+.themed-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Secondary button styles */
+.themed-button-secondary {
+  background-color: var(--color-secondary);
+  color: white;
+  border: 2px solid var(--color-secondary);
+  transition: all 0.3s ease;
+}
+
+.themed-button-secondary:hover,
+.store-theme-container .themed-button-secondary:hover {
+  background-color: var(--color-secondary-light) !important;
+  border-color: var(--color-secondary-light) !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Outline button styles */
+.themed-button-outline {
+  background-color: transparent;
+  color: var(--store-primary-color);
+  border: 2px solid var(--store-primary-color);
+  transition: all 0.3s ease;
+}
+
+.themed-button-outline:hover,
+.store-theme-container .themed-button-outline:hover {
+  background-color: #ff7b00 !important;
+  color: white !important;
+  border-color: #ff7b00 !important;
+  transform: translateY(-2px);
+}
+
+/* Clearing old conflicting hover styles */
+.store-theme-container button.themed-button:hover {
+  /* Reset the conflicting style */
+  background-color: initial;
+  border-color: initial;
+}
+
+/* Creative accents using secondary color */
+.themed-accent {
+  position: relative;
+}
+
+.themed-accent::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background-color: var(--store-secondary-color);
+  border-radius: 3px;
+}
+
+/* Product card enhancements */
+.themed-product-card {
+  position: relative;
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.themed-product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
+}
+
+.themed-product-card:hover::before {
+  opacity: 1;
+}
+
+/* Secondary color accent on hover */
+.themed-product-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30px;
+  height: 30px;
+  background-color: var(--store-secondary-color);
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+
+/* COMPLETELY REDESIGNED STORE STYLES */
+
+.store-container {
+  --store-primary-color: var(--color-primary);
+  --store-secondary-color: var(--color-secondary);
+  color: var(--color-dark);
+}
+
+/* Split hero section with primary and secondary colors */
+.split-hero {
+  position: relative;
+  padding: 0;
+  color: white;
+}
+
+.split-hero::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  background-color: var(--store-primary-color);
+}
+
+.split-hero::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  background-color: var(--store-secondary-color);
+}
+
+/* Section headers with primary color */
+.section-header h2 {
+  color: var(--store-primary-color);
+  display: inline-block;
+  padding-bottom: 0.5rem;
+  position: relative;
+}
+
+.section-header h2::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 80px;
+  height: 4px;
+  background-color: var(--store-secondary-color);
+  border-radius: 2px;
+}
+
+/* Product Grid */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.product-card {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+  border-color: var(--color-primary);
+}
+
+.product-image {
+  height: 220px;
+  background-color: #f8f8f8;
+  overflow: hidden;
+}
+
+.product-title {
+  color: var(--color-dark);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.product-description {
+  color: var(--color-dark);
+  margin-bottom: 1rem;
+}
+
+.product-price {
+  color: var(--color-primary);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.product-stock {
+  color: #777;
+  font-size: 0.875rem;
+  background-color: #f3f4f6;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+}
+
+/* Reviews section with secondary color background */
+.reviews-section {
+  background-color: #f9f9f9;
+  border-radius: 1rem;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.reviews-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(to right, var(--store-primary-color), var(--store-secondary-color));
+}
+
+.rating-summary {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+}
+
+.rating-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--store-primary-color), var(--store-secondary-color));
+  color: white;
+}
+
+.review-form {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  border-left: 5px solid var(--store-secondary-color);
+}
+
+.reviews-list {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.review-card {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.review-avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background-color: var(--store-primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-right: 1rem;
+}
+
+.empty-reviews,
+.empty-state {
+  background-color: white;
+  border-radius: 1rem;
+  padding: 3rem 2rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* Buttons */
+.store-button {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.store-button:hover:not(:disabled) {
+  background-color: var(--color-primary-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.store-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.store-button-alt {
+  background-color: var(--color-secondary);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.store-button-alt:hover {
+  background-color: var(--color-secondary-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.store-button-outline {
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: 0.5rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.store-button-outline:hover {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Store Banner Styles */
+.store-banner {
+  position: relative;
+  width: 100%;
+  color: white;
+  padding: 0;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin-bottom: 2rem;
+}
+
+.banner-image-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.banner-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.banner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.6));
+  z-index: 1;
+}
+
+.banner-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--store-primary-color), var(--store-secondary-color));
+  z-index: 0;
+}
+
+@media (min-width: 768px) {
+  .store-banner {
+    min-height: 400px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .store-banner {
+    min-height: 500px;
+  }
 }
