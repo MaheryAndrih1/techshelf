@@ -23,6 +23,7 @@ import AddProductPage from './pages/seller/AddProductPage';
 import SellerOrderDetailPage from './pages/seller/SellerOrderDetailPage';
 import SellerOrdersPage from './pages/seller/SellerOrdersPage';
 import EditProductPage from './pages/seller/EditProductPage';
+import LikedProductsPage from './pages/user/LikedProductsPage';
 
 // Auth route wrapper
 const ProtectedRoute = ({ element, requiresSeller = false }) => {
@@ -96,6 +97,7 @@ const AppRoutes = () => {
         path="/seller/orders/:orderId" 
         element={<ProtectedRoute element={<SellerOrderDetailPage />} requiresSeller={true} />} 
       />
+      <Route path="/liked-products" element={<LikedProductsPage />} />
       
       {/* Catch-all route */}
       <Route path="*" element={<Navigate to="/" replace />} />

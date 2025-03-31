@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import CustomButton from '../../components/CustomButton';
 
 const OrderListPage = () => {
   const [orders, setOrders] = useState([]);
@@ -20,13 +21,33 @@ const OrderListPage = () => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        const response = await api.get('/orders/orders/');
-        setOrders(response.data?.results || response.data || []);
-        console.log("Orders data:", response.data); // Debug log
-      } catch (err) {
-        setError('Failed to fetch orders');
-        console.error("Error fetching orders:", err);
+        let response;
+        try {
+          // First try the standard endpoint
+          response = await api.get('/orders/orders/');
+        } catch (initialErr) {
+          console.log("Initial endpoint failed, trying alternative:", initialErr);
+          // If that fails, try a fallback endpoint
+          response = await api.get('/orders/');
+        }
         
+        console.log("Orders data:", response.data);
+
+        if (!response.data) {
+          throw new Error('Received empty response from server');
+        }
+        
+        if (response.data?.results) {
+          setOrders(response.data.results);
+        } else if (Array.isArray(response.data)) {
+          setOrders(response.data);
+        } else {
+          console.warn("Unexpected order data format:", response.data);
+          setOrders([]);
+        }
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+        setError(`Failed to fetch orders: ${err.message || 'Unknown error'}`);
         setOrders([]);
       } finally {
         setLoading(false);
@@ -51,6 +72,24 @@ const OrderListPage = () => {
       <Layout>
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           {error}
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!Array.isArray(orders) || orders.length === 0) {
+    return (
+      <Layout>
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">Your Orders</h1>
+          <div className="bg-white p-8 rounded-lg shadow-md text-center">
+            <p className="text-gray-600 mb-4">You haven't placed any orders yet</p>
+            <Link to="/products">
+              <CustomButton type="primary">
+                Browse Products
+              </CustomButton>
+            </Link>
+          </div>
         </div>
       </Layout>
     );

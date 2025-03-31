@@ -1,144 +1,133 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { useCart } from '../../context/CartContext';
 import Layout from '../../components/layout/Layout';
+import { useAuth } from '../../context/AuthContext';
+import CustomButton from '../../components/CustomButton';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [formError, setFormError] = useState('');
-  const { login, loading, error, isAuthenticated } = useAuth();
-  const { mergeCartsAfterLogin } = useCart();
+  const [formErrors, setFormErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login, error: authError, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const getRedirectPath = () => {
-    if (location.state?.from) {
-      return location.state.from;
-    }
-    
-    const params = new URLSearchParams(window.location.search);
-    const redirectParam = params.get('redirect');
-    if (redirectParam) {
-      return decodeURIComponent(redirectParam);
-    }
-    
-    const storedPath = sessionStorage.getItem('redirectAfterLogin');
-    if (storedPath) {
-      sessionStorage.removeItem('redirectAfterLogin');
-      return storedPath;
-    }
-    
-    return '/';
-  };
-  
-  const redirectPath = getRedirectPath();
+
+  // Check for redirect parameter in URL
+  const redirectPath = new URLSearchParams(location.search).get('redirect');
+  const from = location.state?.from || redirectPath || '/';
 
   useEffect(() => {
-    // If already authenticated, redirect to the intended destination
+    // If user is already logged in, redirect to home or previous page
     if (isAuthenticated) {
-      navigate(redirectPath, { replace: true });
+      navigate(from);
     }
-  }, [isAuthenticated, navigate, redirectPath]);
+  }, [isAuthenticated, navigate, from]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError('');
+  const validateForm = () => {
+    const errors = {};
     
-    if (!email) {
-      setFormError('Email is required');
-      return;
+    if (!email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = 'Email is invalid';
     }
     
     if (!password) {
-      setFormError('Password is required');
+      errors.password = 'Password is required';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
       return;
     }
     
+    setIsSubmitting(true);
+    
     try {
       await login(email, password);
-      
-      await mergeCartsAfterLogin();
-  
-      const redirectToCart = sessionStorage.getItem('redirectToCartAfterAuth');
-      if (redirectToCart) {
-        sessionStorage.removeItem('redirectToCartAfterAuth');
-        navigate('/cart');
-      } else {
-      }
+      // If successful, the useEffect will redirect
     } catch (err) {
-      setFormError(err.message);
+      console.error('Login failed:', err);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <Layout>
       <div className="max-w-md mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-center">Login to Your Account</h1>
-        
-        {redirectPath !== '/' && redirectPath !== '/login' && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded">
-            Please log in to continue to {redirectPath.replace(/^\//, '')}
-          </div>
-        )}
-        
-        {(error || formError) && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            {formError || error}
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">
-          <div className="mb-4">
-            <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-700">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="you@example.com"
-            />
-          </div>
+        <div className="bg-white shadow-md rounded-lg p-8">
+          <h1 className="text-2xl font-bold mb-6 text-center text-[#33353a]">Sign In</h1>
           
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <label htmlFor="password" className="text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
-                Forgot password?
-              </Link>
+          {authError && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {authError}
             </div>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-            />
-          </div>
+          )}
           
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-blue-300 transition duration-200"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-        
-        <div className="mt-4 text-center">
-          <p className="text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-blue-600 hover:underline">
-              Sign up
-            </Link>
-          </p>
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label htmlFor="email" className="block text-[#33353a] text-sm font-medium mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                id="email"
+                className={`w-full p-3 border ${formErrors.email ? 'border-red-500' : 'border-gray-300'} rounded focus:outline-none focus:ring-2 focus:ring-[#c5630c]`}
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              {formErrors.email && (
+                <p className="mt-1 text-red-500 text-xs">{formErrors.email}</p>
+              )}
+            </div>
+            
+            <div className="mb-6">
+              <div className="flex justify-between">
+                <label htmlFor="password" className="block text-[#33353a] text-sm font-medium mb-2">
+                  Password
+                </label>
+                <Link to="/forgot-password" className="text-sm text-[#c5630c] hover:text-[#a47f6f]">
+                  Forgot Password?
+                </Link>
+              </div>
+              <input
+                type="password"
+                id="password"
+                className={`w-full p-3 border ${formErrors.password ? 'border-red-500' : 'border-gray-300'} rounded focus:outline-none focus:ring-2 focus:ring-[#c5630c]`}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              {formErrors.password && (
+                <p className="mt-1 text-red-500 text-xs">{formErrors.password}</p>
+              )}
+            </div>
+            
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="w-full bg-[#c5630c] text-white py-2 px-4 rounded hover:bg-[#b35500] focus:outline-none focus:ring-2 focus:ring-[#c5630c] focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+          
+          <div className="mt-6 text-center">
+            <p className="text-[#33353a]">
+              Don't have an account?{' '}
+              <Link to="/register" className="text-[#c5630c] hover:text-[#a47f6f] font-medium">
+                Sign Up
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </Layout>

@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 const OrderDetailPage = () => {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
-  const [productDetails, setProductDetails] = useState({}); // Store loaded product details
+  const [productDetails, setProductDetails] = useState({}); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cancelling, setCancelling] = useState(false);
@@ -82,7 +82,6 @@ const OrderDetailPage = () => {
 
   // Order item component
   const OrderItem = ({ item }) => {
-    // Get product details from our loaded details
     const product = productDetails[item.product_id] || {};
     const productName = product.name || formatProductName(item.product_id);
     const productPrice = parseFloat(item.price || 0);
@@ -151,6 +150,23 @@ const OrderDetailPage = () => {
     );
   }
 
+  if (error) {
+    return (
+      <Layout>
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+          <Link to="/orders">
+            <SimpleButton type="outline">
+              Back to Orders
+            </SimpleButton>
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
+
   if (error || !order) {
     return (
       <Layout>
@@ -169,6 +185,9 @@ const OrderDetailPage = () => {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#33353a]">Order Details</h1>
+        </div>
         <div className="flex justify-between items-center mb-6">
           <div>
             <Link to="/orders" className="text-blue-600 hover:underline mb-2 inline-block">

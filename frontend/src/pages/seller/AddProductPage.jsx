@@ -1,125 +1,96 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
-import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
+import CustomButton from '../../components/CustomButton';
 
 const AddProductPage = () => {
-  const { isAuthenticated, isSeller } = useAuth();
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const [productData, setProductData] = useState({
     name: '',
+    description: '',
     price: '',
     stock: '',
     category: '',
-    description: ''
+    image: null
   });
-  const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [categories, setCategories] = useState([
-    'Laptops', 'Phones', 'Tablets', 'Desktop PCs', 'Accessories', 
-    'Monitors', 'Storage', 'Networking', 'Components', 'Software'
-  ]);
-  
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login', { state: { from: '/seller/add-product' } });
-      return;
-    }
+  const [error, setError] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const { isAuthenticated, isSeller } = useAuth();
+  const navigate = useNavigate();
 
-    if (!isSeller) {
-      navigate('/become-seller');
+  useEffect(() => {
+    if (!isAuthenticated || !isSeller) {
+      navigate('/login');
       return;
     }
+    
+    // Fetch categories
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get('/categories/');
+        setCategories(response.data || []);
+      } catch (err) {
+        console.error('Failed to fetch categories:', err);
+      }
+    };
+    
+    fetchCategories();
   }, [isAuthenticated, isSeller, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
+    setProductData({
+      ...productData,
       [name]: value
-    }));
+    });
   };
 
-  const handleFileChange = (e) => {
+  const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImage(file);
-      setImagePreview(reader.result);
-    };
-    reader.readAsDataURL(file);
+    if (file) {
+      setProductData({
+        ...productData,
+        image: file
+      });
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess('');
-
-    if (!formData.name) {
-      setError('Product name is required');
-      setLoading(false);
-      return;
-    }
-
-    if (!formData.price || isNaN(formData.price) || parseFloat(formData.price) <= 0) {
-      setError('Valid price is required');
-      setLoading(false);
-      return;
-    }
-
-    if (!formData.stock || isNaN(formData.stock) || parseInt(formData.stock) < 0) {
-      setError('Valid stock quantity is required');
-      setLoading(false);
-      return;
-    }
-
+    setError(null);
+    
     try {
-      const productFormData = new FormData();
-      productFormData.append('name', formData.name);
-      productFormData.append('price', formData.price);
-      productFormData.append('stock', formData.stock);
-      productFormData.append('category', formData.category);
-      productFormData.append('description', formData.description);
+      const formData = new FormData();
+      formData.append('name', productData.name);
+      formData.append('description', productData.description);
+      formData.append('price', productData.price);
+      formData.append('stock', productData.stock);
+      formData.append('category', productData.category);
       
-      if (image) {
-        productFormData.append('image', image);
+      if (productData.image) {
+        formData.append('image', productData.image);
       }
-
-      // Fix the API endpoint - remove the duplicate /api/ prefix
-      const response = await api.post('/products/create/', productFormData, {
+      
+      const response = await api.post('/products/create/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
-
-      setSuccess('Product added successfully!');
       
-      // Reset form after successful submission
-      setFormData({
-        name: '',
-        price: '',
-        stock: '',
-        category: '',
-        description: ''
-      });
-      setImage(null);
-      setImagePreview('');
-      
- 
-      setTimeout(() => {
-        navigate('/seller/dashboard');
-      }, 1500);
+      navigate(`/products/${response.data.product_id}`);
     } catch (err) {
-      const message = err.response?.data?.error || 'Failed to create product';
-      setError(message);
-      console.error('Product creation error:', err.response?.data || err);
+      console.error('Failed to add product:', err);
+      setError(err.response?.data?.detail || 'Failed to add product');
     } finally {
       setLoading(false);
     }
@@ -128,145 +99,150 @@ const AddProductPage = () => {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Add New Product</h1>
+        <h1 className="text-2xl font-bold mb-6 text-[#33353a]">Add New Product</h1>
         
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          {error && (
-            <div className="mb-6 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-              {error}
-            </div>
-          )}
-          
-          {success && (
-            <div className="mb-6 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
-              {success}
-            </div>
-          )}
-          
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+        
+        <div className="bg-white rounded-lg shadow-md p-6">
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="mb-4">
+              <label className="block text-gray-700 font-medium mb-2" htmlFor="name">
+                Product Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={productData.name}
+                onChange={handleChange}
+                className="w-full p-2 border rounded focus:ring-[#c5630c] focus:border-[#c5630c]"
+                required
+              />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-gray-700 font-medium mb-2" htmlFor="description">
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={productData.description}
+                onChange={handleChange}
+                className="w-full p-2 border rounded focus:ring-[#c5630c] focus:border-[#c5630c]"
+                rows="4"
+                required
+              ></textarea>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label htmlFor="name" className="block mb-1 text-sm font-medium text-gray-700">
-                  Product Name*
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="category" className="block mb-1 text-sm font-medium text-gray-700">
-                  Category*
-                </label>
-                <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  required
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label htmlFor="price" className="block mb-1 text-sm font-medium text-gray-700">
-                  Price ($)*
+                <label className="block text-gray-700 font-medium mb-2" htmlFor="price">
+                  Price ($)
                 </label>
                 <input
                   type="number"
                   id="price"
                   name="price"
-                  value={formData.price}
+                  value={productData.price}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   step="0.01"
-                  min="0.01"
+                  min="0"
+                  className="w-full p-2 border rounded focus:ring-[#c5630c] focus:border-[#c5630c]"
                   required
                 />
               </div>
               
               <div>
-                <label htmlFor="stock" className="block mb-1 text-sm font-medium text-gray-700">
-                  Stock Quantity*
+                <label className="block text-gray-700 font-medium mb-2" htmlFor="stock">
+                  Stock
                 </label>
                 <input
                   type="number"
                   id="stock"
                   name="stock"
-                  value={formData.stock}
+                  value={productData.stock}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   min="0"
+                  className="w-full p-2 border rounded focus:ring-[#c5630c] focus:border-[#c5630c]"
                   required
                 />
               </div>
-              
-              <div className="md:col-span-2">
-                <label htmlFor="description" className="block mb-1 text-sm font-medium text-gray-700">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows="4"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                ></textarea>
-              </div>
-              
-              <div className="md:col-span-2">
-                <label htmlFor="image" className="block mb-1 text-sm font-medium text-gray-700">
-                  Product Image
-                </label>
-                <input
-                  type="file"
-                  id="image"
-                  name="image"
-                  onChange={handleFileChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  accept="image/*"
-                />
-                {imagePreview && (
-                  <div className="mt-2">
-                    <img
-                      src={imagePreview}
-                      alt="Product Preview"
-                      className="h-40 object-contain"
-                    />
-                  </div>
-                )}
-              </div>
             </div>
             
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
+            <div className="mb-4">
+              <label className="block text-gray-700 font-medium mb-2" htmlFor="category">
+                Category
+              </label>
+              <select
+                id="category"
+                name="category"
+                value={productData.category}
+                onChange={handleChange}
+                className="w-full p-2 border rounded focus:ring-[#c5630c] focus:border-[#c5630c]"
+                required
+              >
+                <option value="">Select a category</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+                <option value="Electronics">Electronics</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Books">Books</option>
+                <option value="Home">Home & Kitchen</option>
+                <option value="Sports">Sports & Outdoors</option>
+                <option value="Toys">Toys & Games</option>
+                <option value="Health">Health & Beauty</option>
+                <option value="Automotive">Automotive</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-gray-700 font-medium mb-2" htmlFor="image">
+                Product Image
+              </label>
+              <input
+                type="file"
+                id="image"
+                name="image"
+                onChange={handleImageChange}
+                accept="image/*"
+                className="w-full p-2 border rounded"
+              />
+              
+              {preview && (
+                <div className="mt-4">
+                  <p className="text-gray-700 mb-2">Preview:</p>
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    className="w-40 h-40 object-cover rounded border"
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <CustomButton
                 type="button"
                 onClick={() => navigate('/seller/dashboard')}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                variant="outline"
               >
                 Cancel
-              </button>
-              <button
+              </CustomButton>
+              <CustomButton
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300"
               >
-                {loading ? 'Adding Product...' : 'Add Product'}
-              </button>
+                {loading ? 'Adding...' : 'Add Product'}
+              </CustomButton>
             </div>
           </form>
         </div>

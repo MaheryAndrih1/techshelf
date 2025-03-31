@@ -149,8 +149,7 @@ export const CartProvider = ({ children }) => {
           product_id: productId,
           quantity,
         });
-        
-        // Trigger animation FIRST before any async operations
+    
         triggerAnimation();
         
         await fetchCart();
@@ -207,12 +206,11 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // New helper function to trigger animation consistently
   const triggerAnimation = () => {
     setAnimateCart(true);
     setTimeout(() => {
       setAnimateCart(false);
-    }, 700);
+    }, 400);
   };
 
   const removeFromCart = async (productId) => {
@@ -415,7 +413,7 @@ export const CartProvider = ({ children }) => {
     setError(null);
     
     try {
-      // Make sure we pass the save_card flag correctly
+      // Update the checkout endpoint to use orders/checkout/ instead of just checkout/
       const response = await api.post('/orders/checkout/', {
         ...checkoutData,
         save_card: checkoutData.save_card || false
@@ -443,7 +441,7 @@ export const CartProvider = ({ children }) => {
 
   const value = {
     cart,
-    cartItems: cart?.items || [],  // Make sure cartItems is always available
+    cartItems: cart?.items || [],  
     loading,
     error,
     addToCart,

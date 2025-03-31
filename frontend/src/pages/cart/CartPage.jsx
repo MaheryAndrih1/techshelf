@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import CustomButton from '../../components/CustomButton';
 
 const CartPage = () => {
   const { cart, loading, removeFromCart, updateQuantity, applyPromotion, isGuestCart } = useCart();
@@ -116,9 +117,10 @@ const CartPage = () => {
     }, [quantity, productId, item.quantity]);
     
     return (
-      <div className="flex items-center py-4 border-b">
-        <div className="w-2/5 flex items-center">
-          <div className="w-16 h-16 bg-gray-200 mr-4 flex items-center justify-center relative overflow-hidden">
+      <div className="flex flex-col sm:flex-row items-center py-6 border-b border-gray-200">
+        {/* Product Image */}
+        <div className="w-full sm:w-1/6 mb-4 sm:mb-0 flex justify-center sm:justify-start">
+          <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
             {productImage ? (
               <img 
                 src={productImage} 
@@ -135,44 +137,65 @@ const CartPage = () => {
               </div>
             )}
           </div>
-          
-          <div>
-            <Link to={`/products/${productId}`} className="text-blue-600 hover:underline font-medium">
+        </div>
+        
+        {/* Product Info */}
+        <div className="w-full sm:w-5/6 flex flex-col sm:flex-row sm:items-center">
+          <div className="sm:w-2/5 mb-3 sm:mb-0 text-center sm:text-left">
+            <Link to={`/products/${productId}`} className="font-medium text-gray-800 hover:text-[#c5630c] mb-1 block">
               {productName}
             </Link>
-            <button 
+            <button
               onClick={() => handleRemoveItem(productId)}
-              className="block text-xs text-red-500 hover:text-red-700 mt-1"
+              className="text-sm text-red-500 hover:text-red-700"
             >
               Remove
             </button>
           </div>
-        </div>
-
-        <div className="w-1/5 text-center">
-          ${productPrice.toFixed(2)}
-        </div>
-
-        <div className="w-1/5 text-center">
-          <div className="relative">
+          
+          {/* Price */}
+          <div className="sm:w-1/5 text-center mb-3 sm:mb-0">
+            <span className="text-gray-600">${productPrice.toFixed(2)}</span>
+          </div>
+          
+          {/* Quantity */}
+          <div className="sm:w-1/5 flex justify-center items-center mb-3 sm:mb-0 relative">
+            <button
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="w-8 h-8 flex items-center justify-center rounded-l border border-gray-300 bg-gray-100 hover:bg-gray-200"
+              disabled={updating}
+            >
+              -
+            </button>
+            
             <input
               type="number"
               min="1"
-              max={item.product?.stock || 99}
               value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value))}
-              className={`w-16 border rounded text-center py-1 ${updating ? 'bg-gray-100' : ''}`}
+              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+              className="w-12 h-8 text-center border-t border-b border-gray-300"
+              disabled={updating}
             />
+            
+            <button
+              onClick={() => setQuantity(quantity + 1)}
+              className="w-8 h-8 flex items-center justify-center rounded-r border border-gray-300 bg-gray-100 hover:bg-gray-200"
+              disabled={updating}
+            >
+              +
+            </button>
+            
             {updating && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50">
-                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <div className="absolute -top-2 -right-2 w-5 h-5">
+                <div className="w-full h-full border-2 border-[#c5630c] border-t-transparent rounded-full animate-spin"></div>
               </div>
             )}
           </div>
-        </div>
-
-        <div className="w-1/5 text-right font-semibold">
-          ${(productPrice * quantity).toFixed(2)}
+          
+          {/* Total */}
+          <div className="sm:w-1/5 text-center sm:text-right font-semibold text-[#c5630c]">
+            ${(productPrice * quantity).toFixed(2)}
+          </div>
         </div>
       </div>
     );
@@ -198,8 +221,10 @@ const CartPage = () => {
           <h1 className="text-2xl font-bold mb-6">Shopping Cart</h1>
           <div className="bg-white p-8 rounded-lg shadow-md text-center">
             <p className="text-gray-600 mb-4">Your cart is empty</p>
-            <Link to="/products" className="inline-block bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700">
-              Continue Shopping
+            <Link to="/products">
+              <CustomButton type="primary">
+                Continue Shopping
+              </CustomButton>
             </Link>
           </div>
         </div>
@@ -213,9 +238,11 @@ const CartPage = () => {
         <h1 className="text-2xl font-bold mb-6">Shopping Cart ({cartTotals.itemCount} items)</h1>
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+          {/* Cart Header */}
           <div className="p-6">
-            <div className="flex font-bold text-gray-500 pb-2 border-b">
-              <div className="w-2/5">Product</div>
+            <div className="hidden sm:flex font-medium text-gray-500 pb-2 border-b">
+              <div className="w-1/6">Product</div>
+              <div className="w-2/5">Name</div>
               <div className="w-1/5 text-center">Price</div>
               <div className="w-1/5 text-center">Quantity</div>
               <div className="w-1/5 text-right">Total</div>
@@ -226,6 +253,7 @@ const CartPage = () => {
             ))}
           </div>
           
+          {/* Cart Summary */}
           <div className="bg-gray-50 p-6">
             <div className="flex justify-between mb-2">
               <span>Subtotal:</span>
@@ -285,12 +313,15 @@ const CartPage = () => {
               >
                 Continue Shopping
               </Link>
-              <button 
+              <CustomButton
                 onClick={handleCheckout}
-                className="text-center flex-grow bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
+                type="primary"
+                size="large"
+                fullWidth
+                disabled={cart.items.length === 0}
               >
                 Proceed to Checkout
-              </button>
+              </CustomButton>
             </div>
           </div>
         </div>
