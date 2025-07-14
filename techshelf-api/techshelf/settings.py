@@ -76,21 +76,12 @@ WSGI_APPLICATION = 'techshelf.wsgi.application'
 # Database
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/techshelf'),
-        conn_max_age=600
-    )
-}
-
-if 'DATABASE_URL' not in os.environ:
-    DATABASES['default'] = {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'techshelf-db'),
-        'USER': os.environ.get('DB_USER', 'techshelf-admin'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
+}
+#postgresql://techshelf_db_user:q48wBrXxE7pKhikRHWu5DfhsegIlf9ZI@dpg-cvl95j1r0fns738bd1mg-a.frankfurt-postgres.render.com/techshelf_db
 
 AUTH_USER_MODEL = 'users.User'
 
